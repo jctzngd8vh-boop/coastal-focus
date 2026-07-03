@@ -58,12 +58,23 @@
   .toolbar button:hover{background:#333;}
   .toolbar button.active{background:#fff;color:#111;}
 
+  @media (max-width:480px){
+    .toolbar{flex-wrap:wrap;padding:10px 14px;}
+    .toolbar span.title{width:100%;margin-right:0;text-align:center;}
+  }
+
   /* ---------- Page shell ---------- */
   .sheet-wrap{
     padding:30px 0 60px;
     display:flex;
     flex-direction:column;
     align-items:center;
+  }
+
+  /* Shrink-to-fit wrapper so 8.5x11 pages preview cleanly on narrow
+     screens without needing pinch-zoom; JS sets width/height per page. */
+  .page-shell{
+    margin-bottom:26px;
   }
 
   .page{
@@ -78,7 +89,7 @@
     break-after:page;
     page-break-after:always;
   }
-  .page:last-of-type{break-after:auto;page-break-after:auto;}
+  .page-shell:last-of-type .page{break-after:auto;page-break-after:auto;}
 
   .page-number{
     position:absolute;
@@ -426,13 +437,24 @@
     .toolbar{display:none !important;}
     html,body{background:#fff;}
     .sheet-wrap{padding:0;}
+    .page-shell{
+      width:auto !important;
+      height:auto !important;
+      margin:0;
+    }
     .page{
       box-shadow:none;
       margin:0;
       width:auto;
-      height:auto;
-      min-height:auto;
+      /* @page already carves out a 0.6in margin on all sides, so this
+         div's own padding must stay 0 to avoid doubling it up. But a
+         block box with height:auto only shrink-wraps its content, so
+         without an explicit height here the page-number (pinned to
+         the box's own bottom edge) ends up floating right under the
+         content instead of at the true bottom of the sheet. */
+      height:9.8in;
       padding:0;
+      transform:none !important;
     }
   }
 </style>
@@ -442,7 +464,7 @@
 <div class="toolbar">
   <span class="title">The Anti-Overwhelm Planner</span>
   <button id="focusToggle" onclick="toggleFocusMode()">🌓 Toggle Focus Mode (B&amp;W)</button>
-  <button onclick="window.print()">🖨️ Print / Save PDF</button>
+  <button onclick="handlePrint()">🖨️ Print / Save PDF</button>
 </div>
 
 <div class="sheet-wrap">
@@ -778,6 +800,52 @@
   function toggleFocusMode(){
     document.body.classList.toggle('focus-mode');
     document.getElementById('focusToggle').classList.toggle('active');
+  }
+
+  // Pages are a fixed 8.5in x 11in (816 x 1056 CSS px). On a phone-width
+  // screen that's wider than the viewport, so wrap each page in a shell
+  // and scale it down to fit, instead of relying on pinch-zoom.
+  var NATURAL_W = 816;
+  var NATURAL_H = 1056;
+  var SIDE_PADDING = 16;
+
+  function wrapPagesOnce(){
+    var pages = document.querySelectorAll('.sheet-wrap > .page');
+    pages.forEach(function(page){
+      var shell = document.createElement('div');
+      shell.className = 'page-shell';
+      page.parentNode.insertBefore(shell, page);
+      shell.appendChild(page);
+      page.style.transformOrigin = 'top left';
+      page.style.marginBottom = '0';
+    });
+  }
+
+  function applyScale(){
+    var vw = document.documentElement.clientWidth;
+    var scale = Math.min(1, (vw - SIDE_PADDING * 2) / NATURAL_W);
+    document.querySelectorAll('.page-shell').forEach(function(shell){
+      var page = shell.firstElementChild;
+      page.style.transform = 'scale(' + scale + ')';
+      shell.style.width = (NATURAL_W * scale) + 'px';
+      shell.style.height = (NATURAL_H * scale) + 'px';
+    });
+  }
+
+  wrapPagesOnce();
+  applyScale();
+  window.addEventListener('resize', applyScale);
+  window.addEventListener('orientationchange', applyScale);
+
+  function handlePrint(){
+    try{
+      window.print();
+    }catch(e){}
+    // Some embedded/in-app viewers silently swallow window.print().
+    // Give people a clear way forward if nothing visibly happens.
+    window.setTimeout(function(){
+      alert('If nothing happened: this page is likely opening inside an app preview that blocks printing. Open this page in Safari or Chrome directly, then use Print / Save PDF again.');
+    }, 400);
   }
 </script>
 
