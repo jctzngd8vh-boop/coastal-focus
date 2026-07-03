@@ -446,8 +446,13 @@
       box-shadow:none;
       margin:0;
       width:auto;
-      height:auto;
-      min-height:auto;
+      /* @page already carves out a 0.6in margin on all sides, so this
+         div's own padding must stay 0 to avoid doubling it up. But a
+         block box with height:auto only shrink-wraps its content, so
+         without an explicit height here the page-number (pinned to
+         the box's own bottom edge) ends up floating right under the
+         content instead of at the true bottom of the sheet. */
+      height:9.8in;
       padding:0;
       transform:none !important;
     }
