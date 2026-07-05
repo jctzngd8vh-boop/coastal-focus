@@ -306,6 +306,27 @@
   .detail-text{ font-size:14.5px; line-height:1.5; color:var(--label); background:var(--fill); border-radius:var(--radius-md); padding:14px; margin-bottom:16px; }
   .action-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px; }
   .action-grid.cols-2{ grid-template-columns:repeat(2,1fr); }
+  .action-grid.cols-1{ grid-template-columns:1fr; }
+
+  .disposal-card{ border-radius:var(--radius-md); padding:14px; margin-bottom:16px; background:var(--fill); border:1px solid transparent; }
+  .disposal-card.toss{ background:var(--green-tint); }
+  .disposal-card.keep{ background:var(--blue-tint); }
+  .disposal-card.keepsake{ background:var(--accent-tint); }
+  .disposal-head{ display:flex; align-items:center; gap:8px; font-size:14.5px; font-weight:700; }
+  .disposal-card.toss .disposal-head{ color:var(--green); }
+  .disposal-card.keep .disposal-head{ color:var(--blue); }
+  .disposal-card.keepsake .disposal-head{ color:var(--accent-strong); }
+  .disposal-reason{ font-size:13px; color:var(--label-secondary); line-height:1.4; margin:6px 0 12px; }
+  .disposal-btn{ width:100%; padding:11px; border-radius:11px; font-size:13.5px; font-weight:700; background:rgba(0,0,0,0.06); color:var(--label); }
+  @media (prefers-color-scheme: dark){ .disposal-btn{ background:rgba(255,255,255,0.1); } }
+  .disposal-btn.done{ background:transparent; color:var(--label-secondary); text-decoration:underline; }
+  .disposal-btn:active{ opacity:0.75; }
+
+  .mail-disposal-tag{ font-size:11.5px; font-weight:700; padding:3px 8px; border-radius:7px; display:inline-flex; align-items:center; gap:4px; }
+  .mail-disposal-tag.toss{ background:var(--green-tint); color:var(--green); }
+  .mail-disposal-tag.keep{ background:var(--blue-tint); color:var(--blue); }
+  .mail-disposal-tag.keepsake{ background:var(--accent-tint); color:var(--accent-strong); }
+  .mail-disposal-tag.done{ background:var(--fill); color:var(--label-tertiary); }
   .big-action{
     display:flex; flex-direction:column; align-items:center; gap:6px;
     padding:14px 6px; border-radius:var(--radius-md);
@@ -513,6 +534,7 @@
 (function(){
   const NOW = new Date('2026-07-29T12:00:00');
   const TASKS_KEY = 'mailsort:tasks:v1';
+  const DISPOSED_KEY = 'mailsort:disposed:v1';
 
   const mailItems = [
     {
@@ -522,33 +544,37 @@
       amount:"$127.43", deadline:"2026-08-15", urgency:"high",
       thread:"PG&E 2026", threadCount:4, confidence:97, icon:"⚡",
       phone:"+18007435000", email:"support@pge.com",
+      disposal:"toss", disposalReason:"Routine bill — once it's paid, everything you'd need is saved here. No reason to keep the paper.",
       details:"Account ending 4821 • Service period Jun 26 – Jul 25 • Auto-pay is OFF. Late fee $5 after due date."
     },
     {
-      id:4, sender:"Rancho Mesa HOA", title:"Balcony Inspection Notice", category:"Bills",
+      id:4, sender:"Rancho Mesa HOA", title:"Balcony Inspection Notice", category:"Legal",
       date:"2026-07-26", received:"2d ago",
       summary:"Mandatory balcony inspection scheduled. Submit certificate by Jul 20 or $250 fine.",
       amount:null, deadline:"2026-07-20", urgency:"high",
       thread:"HOA 2026", threadCount:2, confidence:91, icon:"🏘️",
       phone:"+19255550142", email:"management@ranchomesahoa.example",
+      disposal:"toss", disposalReason:"Submit your certificate, then this is safe to shred — the deadline and requirements are saved here either way.",
       details:"Inspection window Aug 1–15. Upload certificate to portal. Previous notice sent Jun 10."
     },
     {
-      id:2, sender:"California DMV", title:"Registration Renewal", category:"Government",
+      id:2, sender:"California DMV", title:"Registration Renewal", category:"Legal",
       date:"2026-07-27", received:"Yesterday",
       summary:"2021 Toyota Camry registration expires Sep 3. Renew online to avoid late fee.",
       amount:"$178.00", deadline:"2026-09-03", urgency:"medium",
       thread:"DMV · Camry", threadCount:1, isNewThread:true, confidence:95, icon:"🚗",
       phone:"+18007770133", email:null,
+      disposal:"toss", disposalReason:"This is just the renewal reminder — safe to shred once renewed. (Keep the actual registration card/sticker that arrives after.)",
       details:"License 8ABC123 • Renewal fee $178 • Smog check required. Mail-in option closes Aug 20."
     },
     {
-      id:5, sender:"State Farm", title:"Auto Policy Renewal", category:"Insurance",
+      id:5, sender:"State Farm", title:"Auto Policy Renewal", category:"Bills",
       date:"2026-07-22", received:"5d ago",
       summary:"Policy renews Oct 1. No action needed unless changing coverage.",
       amount:"$642.00", deadline:"2026-10-01", urgency:"medium",
       thread:"State Farm Auto", threadCount:3, confidence:99, icon:"🛡️",
       phone:"+18007828332", email:null,
+      disposal:"keep", disposalReason:"Insurance declarations pages are genuinely handy to have on hand — worth keeping this one filed.",
       details:"Good driver discount applied. Premium billed per 6-month term. Consider bundling home for additional savings."
     },
     {
@@ -558,22 +584,49 @@
       amount:"$0.00", deadline:null, urgency:"low",
       thread:"Kaiser 2026", threadCount:5, confidence:93, icon:"🏥",
       phone:"+18004644000", email:null,
+      disposal:"keep", disposalReason:"Medical EOBs are worth keeping for tax records or insurance disputes — this one's saved digitally either way.",
       details:"Linked to previous Kaiser letter from June 12 regarding referral. No action required — save for records."
     },
     {
-      id:6, sender:"Chase Bank", title:"Monthly Statement", category:"Bank",
+      id:6, sender:"Chase Bank", title:"Monthly Statement", category:"Bills",
       date:"2026-07-24", received:"4d ago",
       summary:"June statement available. No unusual activity detected.",
       amount:null, deadline:null, urgency:"low",
       thread:"Chase Checking", threadCount:12, confidence:99, icon:"🏦",
       phone:"+18009359935", email:null,
+      disposal:"toss", disposalReason:"Your bank keeps official statements online anytime — this paper copy is safe to shred.",
       details:"Closing balance $4,218.33 · 47 transactions · 12 receipts auto-categorized."
+    },
+    {
+      id:7, sender:"Aunt Carol", title:"Birthday Card", category:"Personal",
+      date:"2026-07-23", received:"5d ago",
+      summary:"A handwritten card for your birthday, with a $25 gift card tucked inside.",
+      amount:null, deadline:null, urgency:"low",
+      thread:null, threadCount:1, isNewThread:true, confidence:88, icon:"💌",
+      phone:null, email:null,
+      disposal:"keepsake", disposalReason:"A personal note like this is worth keeping if it means something to you — entirely your call, no obligation either way.",
+      details:"\"Thinking of you on your birthday! Call me when you get a chance — love, Aunt Carol.\" Gift card: Target, $25."
+    },
+    {
+      id:8, sender:"Golden State Rewards", title:"You're Pre-Approved!", category:"Junk",
+      date:"2026-07-21", received:"1w ago",
+      summary:"Promotional credit card offer. 0% APR for 15 months. No action needed.",
+      amount:null, deadline:null, urgency:"low",
+      thread:null, threadCount:1, isNewThread:true, confidence:96, icon:"📣",
+      phone:null, email:null,
+      disposal:"toss", disposalReason:"Unsolicited offer with no obligation — shred and recycle anytime. Opt out at optoutprescreen.com.",
+      details:"Marketing mail — pre-approved offer with no personal obligation. Safe to shred and recycle; opt out at optoutprescreen.com."
     },
   ];
 
   const drawerMeta = {
-    All:{ icon:"📥" }, Bills:{ icon:"🧾" }, Insurance:{ icon:"🛡️" },
-    Bank:{ icon:"🏦" }, Medical:{ icon:"🏥" }, Government:{ icon:"🏛️" },
+    All:{ icon:"📥" }, Bills:{ icon:"🧾" }, Legal:{ icon:"⚖️" },
+    Medical:{ icon:"🏥" }, Personal:{ icon:"💌" }, Junk:{ icon:"🗑️" },
+  };
+  const DISPOSAL_META = {
+    toss:{ label:"Safe to toss", icon:"🗑️" },
+    keep:{ label:"Keep the original", icon:"📁" },
+    keepsake:{ label:"Keepsake", icon:"💛" },
   };
   const urgencyMap = {
     high:{ label:"High" }, medium:{ label:"Medium" }, low:{ label:"Low" },
@@ -598,6 +651,14 @@
     tasks.unshift({ id:Date.now()+Math.random(), title, due:due||null, source:source||null, done:false });
     saveTasks(); renderTasks();
   }
+
+  // ---------- Disposed store — tracks which physical mail the user has confirmed tossing/keeping ----------
+  function loadDisposed(){
+    try{ return JSON.parse(localStorage.getItem(DISPOSED_KEY)) || {}; } catch(e){ return {}; }
+  }
+  function saveDisposed(){ localStorage.setItem(DISPOSED_KEY, JSON.stringify(disposed)); }
+  let disposed = loadDisposed();
+  function setDisposed(id, value){ disposed[id] = value; saveDisposed(); }
 
   // ---------- Toast ----------
   const toastEl = document.getElementById('toast');
@@ -664,12 +725,23 @@
   const taskSheet = document.getElementById('taskSheet');
   wireSheetDismiss(taskScrim, taskSheet, document.getElementById('taskHandle'));
 
+  const DISPOSAL_ACTION_LABEL = {
+    toss:{ action:"Mark as tossed", done:"Tossed" },
+    keep:{ action:"Mark as filed", done:"Filed" },
+    keepsake:{ action:"Mark as saved", done:"Saved" },
+  };
+
   function openDetail(m){
     const u = urgencyMap[m.urgency];
     const actions = [];
-    actions.push(`<a class="big-action primary" href="tel:${m.phone}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2Z"/></svg>Call</a>`);
+    if(m.phone) actions.push(`<a class="big-action primary" href="tel:${m.phone}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2Z"/></svg>Call</a>`);
     if(m.email) actions.push(`<a class="big-action" href="mailto:${m.email}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5C4 5.67 4.67 5 5.5 5h13c.83 0 1.5.67 1.5 1.5v11c0 .83-.67 1.5-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11Z"/><path d="M4 7l8 5.5L20 7"/></svg>Email</a>`);
-    actions.push(`<button class="big-action" id="detailAddTask"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Add Task</button>`);
+    actions.push(`<button class="big-action ${actions.length===0?'primary':''}" id="detailAddTask"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Add Task</button>`);
+    const gridColsClass = actions.length===1 ? 'cols-1' : actions.length===2 ? 'cols-2' : '';
+
+    const dm = DISPOSAL_META[m.disposal];
+    const dl = DISPOSAL_ACTION_LABEL[m.disposal];
+    const isDone = !!disposed[m.id];
 
     detailBody.innerHTML = `
       <div class="detail-header">
@@ -685,7 +757,12 @@
         ${m.deadline ? `<span class="badge">Due ${fmtShort(m.deadline)}</span>` : ''}
       </div>
       <p class="detail-text">${m.details}</p>
-      <div class="action-grid ${actions.length===2?'cols-2':''}">${actions.join('')}</div>
+      <div class="action-grid ${gridColsClass}">${actions.join('')}</div>
+      <div class="disposal-card ${m.disposal}">
+        <div class="disposal-head"><span>${dm.icon}</span><span>${isDone ? dl.done : dm.label}</span></div>
+        <p class="disposal-reason">${m.disposalReason}</p>
+        <button class="disposal-btn ${isDone?'done':''}" id="disposalToggle">${isDone ? `↺ Undo — marked ${dl.done.toLowerCase()}` : dl.action}</button>
+      </div>
     `;
     const addBtn = document.getElementById('detailAddTask');
     if(addBtn){
@@ -697,6 +774,14 @@
         closeSheet(detailScrim, detailSheet);
       });
     }
+    document.getElementById('disposalToggle').addEventListener('click', () => {
+      const nowDone = !disposed[m.id];
+      setDisposed(m.id, nowDone);
+      renderMailList();
+      renderInsights();
+      openDetail(m);
+      showToast(nowDone ? `Marked ${DISPOSAL_ACTION_LABEL[m.disposal].done.toLowerCase()}` : 'Undone');
+    });
     openSheet(detailScrim, detailSheet);
   }
 
@@ -795,10 +880,16 @@
     const withDeadline = mailItems.filter(m=>m.deadline).sort((a,b)=> new Date(a.deadline)-new Date(b.deadline));
     const total = withDeadline.reduce((s,m)=> s+parseAmount(m.amount), 0);
     const high = mailItems.filter(m=>m.urgency==='high').length;
+    const readyToToss = mailItems.filter(m=>m.disposal==='toss' && !disposed[m.id]).length;
     const next = withDeadline[0];
     const nextDays = next ? daysUntil(next.deadline) : null;
 
     document.getElementById('insightStrip').innerHTML = `
+      <div class="insight-card">
+        <div class="label">Ready to Toss</div>
+        <div class="value">${readyToToss}</div>
+        <div class="sub">Safe to shred right now</div>
+      </div>
       <div class="insight-card">
         <div class="label">Upcoming</div>
         <div class="value">$${total.toFixed(2)}</div>
@@ -833,9 +924,14 @@
 
     mailListEl.innerHTML = items.map(m => {
       const u = urgencyMap[m.urgency];
-      const acts = [`<a class="row-action action-call" href="tel:${m.phone}" onclick="event.stopPropagation()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2Z"/></svg><span>Call</span></a>`];
+      const acts = [];
+      if(m.phone) acts.push(`<a class="row-action action-call" href="tel:${m.phone}" onclick="event.stopPropagation()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2Z"/></svg><span>Call</span></a>`);
       if(m.email) acts.push(`<a class="row-action action-email" href="mailto:${m.email}" onclick="event.stopPropagation()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5C4 5.67 4.67 5 5.5 5h13c.83 0 1.5.67 1.5 1.5v11c0 .83-.67 1.5-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11Z"/><path d="M4 7l8 5.5L20 7"/></svg><span>Email</span></a>`);
       acts.push(`<button class="row-action action-task" data-task-for="${m.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span>Task</span></button>`);
+
+      const dm = DISPOSAL_META[m.disposal];
+      const isDone = !!disposed[m.id];
+      const dl = DISPOSAL_ACTION_LABEL[m.disposal];
 
       return `
       <li class="swipe-row mail-row" data-id="${m.id}" data-actions-width="${acts.length*76}">
@@ -850,6 +946,7 @@
               <div class="mail-meta">
                 ${m.deadline ? `<span class="meta-chip ${m.urgency}">Due ${fmtShort(m.deadline)}</span>` : ''}
                 ${m.amount ? `<span class="meta-amount">${m.amount}</span>` : ''}
+                <span class="mail-disposal-tag ${isDone?'done':m.disposal}">${isDone?'✓':dm.icon} ${isDone?dl.done:dm.label}</span>
               </div>
             </div>
           </div>
@@ -946,6 +1043,7 @@
         amount:"$84.20", deadline:"2026-08-22", urgency:"medium",
         thread:"Berkeley Utilities", threadCount:1, isNewThread:true, confidence:96, icon:"💧",
         phone:"+15106441000", email:"utilities@cityofberkeley.example",
+        disposal:"toss", disposalReason:"Routine utility bill — once it's paid, everything you'd need is saved here.",
         details:"Auto-categorized as Bills. Extracted account number from image. Added to thread detection."
       });
       renderChips(); renderInsights(); renderMailList();
