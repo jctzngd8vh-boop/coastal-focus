@@ -2,736 +2,965 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MailSort — Digitize Physical Mail</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#F2F1EC" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+<title>MailSort</title>
 <style>
   :root{
-    --brand:#5a4a2a;
-    --brand-dark:#3f321c;
-    --paper:#f6ecd2;
+    color-scheme: light dark;
+    --bg:#F2F1EC;
+    --bg-elevated:#FFFFFF;
+    --bg-grouped:#FFFFFF;
+    --bg-translucent:rgba(242,241,236,0.82);
+    --fill:#EDEBE3;
+    --fill-strong:#E4E1D6;
+    --label:#1C1B18;
+    --label-secondary:rgba(28,27,24,0.55);
+    --label-tertiary:rgba(28,27,24,0.34);
+    --separator:rgba(28,27,24,0.09);
+    --accent:#B3541E;
+    --accent-strong:#8F3F14;
+    --accent-tint:rgba(179,84,30,0.12);
+    --red:#D8402B;
+    --red-tint:rgba(216,64,43,0.12);
+    --orange:#C8791C;
+    --orange-tint:rgba(200,121,28,0.14);
+    --green:#3E8A4F;
+    --green-tint:rgba(62,138,79,0.13);
+    --blue:#2C6FB0;
+    --blue-tint:rgba(44,111,176,0.12);
+    --shadow-card:0 1px 2px rgba(28,27,24,0.04), 0 8px 24px rgba(28,27,24,0.06);
+    --radius-lg:22px;
+    --radius-md:16px;
+    --radius-sm:11px;
+    --safe-top:max(env(safe-area-inset-top),12px);
+    --safe-bottom:max(env(safe-area-inset-bottom),10px);
+    --tabbar-h:56px;
   }
-  body{ font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--paper); }
-  .tabular{ font-variant-numeric: tabular-nums; }
-  .card{ transition: transform .2s ease, box-shadow .2s ease; }
-  .card:hover{ transform: translateY(-2px); box-shadow: 0 10px 28px rgba(90,74,42,0.10); }
-  .stat-card{ transition: transform .2s ease, box-shadow .2s ease; }
-  .stat-card:hover{ transform: translateY(-1px); }
-  .expand{ display:grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
-  .expand.open{ grid-template-rows: 1fr; }
-  .expand-inner{ overflow:hidden; }
-  .no-scrollbar::-webkit-scrollbar{ display:none; }
-  .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
-  .drop-active{ background:#f5e9c9 !important; box-shadow: inset 0 0 0 2px var(--brand); }
-  .fade-in{ animation: fadeIn .35s ease both; }
-  @keyframes fadeIn{ from{ opacity:0; transform: translateY(4px); } to{ opacity:1; transform: translateY(0); } }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#000000;
+      --bg-elevated:#161615;
+      --bg-grouped:#161615;
+      --bg-translucent:rgba(0,0,0,0.78);
+      --fill:#201F1D;
+      --fill-strong:#2B2A27;
+      --label:#F5F4F1;
+      --label-secondary:rgba(245,244,241,0.58);
+      --label-tertiary:rgba(245,244,241,0.36);
+      --separator:rgba(245,244,241,0.11);
+      --accent:#E08A46;
+      --accent-strong:#F0A468;
+      --accent-tint:rgba(224,138,70,0.16);
+      --red:#F0574B;
+      --red-tint:rgba(240,87,75,0.16);
+      --orange:#E0A23B;
+      --orange-tint:rgba(224,162,59,0.16);
+      --green:#5CB56D;
+      --green-tint:rgba(92,181,109,0.16);
+      --blue:#5B9BD9;
+      --blue-tint:rgba(91,155,217,0.16);
+      --shadow-card:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.4);
+    }
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; overscroll-behavior:none; }
+  body{
+    background:#0d0d0c;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--label);
+    -webkit-tap-highlight-color:transparent;
+    display:flex;
+    justify-content:center;
+  }
+  @media (prefers-color-scheme: dark){ body{ background:#000000; } }
+  button, input, textarea{ font-family:inherit; color:inherit; }
+  button{ background:none; border:none; padding:0; cursor:pointer; }
+  a{ color:inherit; text-decoration:none; }
+  ul{ list-style:none; margin:0; padding:0; }
+  h1,h2,h3,p{ margin:0; }
+
+  .app-shell{
+    position:relative;
+    width:100%;
+    max-width:480px;
+    height:100dvh;
+    background:var(--bg);
+    overflow:hidden;
+    transform:translateZ(0);
+  }
+  @media (min-width:560px) and (min-height:700px){
+    body{ align-items:center; padding:24px 0; }
+    .app-shell{
+      height:min(920px, calc(100dvh - 48px));
+      border-radius:46px;
+      box-shadow:0 30px 80px rgba(0,0,0,0.5), 0 0 0 10px #0a0a09, 0 0 0 11px rgba(255,255,255,0.08);
+    }
+  }
+
+  .panel{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+  }
+  .panel[hidden]{ display:none; }
+
+  .navbar{
+    position:relative;
+    z-index:5;
+    flex:none;
+    padding:calc(var(--safe-top) + 2px) 20px 10px;
+    background:var(--bg);
+    border-bottom:0.5px solid transparent;
+    transition:background-color .2s, border-color .2s, backdrop-filter .2s;
+  }
+  .navbar-row{ display:flex; align-items:center; justify-content:space-between; min-height:30px; }
+  .large-title{ font-size:32px; font-weight:800; letter-spacing:-0.02em; margin-top:2px; transition:opacity .18s ease, transform .18s ease; }
+  .navbar-compact{
+    position:absolute; left:0; right:0; bottom:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px; font-weight:600;
+    opacity:0; transform:translateY(4px);
+    pointer-events:none;
+    transition:opacity .18s ease, transform .18s ease;
+  }
+  .panel.scrolled .navbar{
+    background:var(--bg-translucent);
+    backdrop-filter:blur(20px) saturate(180%);
+    -webkit-backdrop-filter:blur(20px) saturate(180%);
+    border-bottom-color:var(--separator);
+  }
+  .panel.scrolled .large-title{ opacity:0; transform:translateY(-8px); }
+  .panel.scrolled .navbar-compact{ opacity:1; transform:translateY(0); }
+  .nav-action{
+    width:32px; height:32px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--accent);
+  }
+  .nav-action:active{ background:var(--fill); }
+
+  .scroll-area{
+    flex:1; min-height:0; overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:2px 16px calc(var(--tabbar-h) + var(--safe-bottom) + 28px);
+  }
+
+  /* ---- Search field ---- */
+  .search-field{
+    display:flex; align-items:center; gap:8px;
+    background:var(--fill); border-radius:12px;
+    padding:9px 12px; margin:6px 0 14px;
+  }
+  .search-field svg{ flex:none; color:var(--label-tertiary); }
+  .search-field input{
+    flex:1; min-width:0; border:none; background:none; outline:none;
+    font-size:16px; color:var(--label);
+  }
+  .search-field input::placeholder{ color:var(--label-tertiary); }
+  .search-clear{ flex:none; color:var(--label-tertiary); display:none; }
+  .search-field.has-text .search-clear{ display:flex; }
+
+  /* ---- Chip row ---- */
+  .chip-row{ display:flex; gap:8px; overflow-x:auto; padding-bottom:14px; margin:0 -16px; padding-left:16px; padding-right:16px; scrollbar-width:none; }
+  .chip-row::-webkit-scrollbar{ display:none; }
+  .chip{
+    flex:none; display:flex; align-items:center; gap:6px;
+    padding:8px 14px; border-radius:999px;
+    background:var(--fill); font-size:14px; font-weight:600;
+    white-space:nowrap; color:var(--label);
+    transition:background-color .15s, color .15s;
+  }
+  .chip .count{ font-weight:700; opacity:.6; font-size:12.5px; }
+  .chip.active{ background:var(--label); color:var(--bg); }
+  .chip.active .count{ opacity:.7; }
+  .chip:active{ transform:scale(0.96); }
+
+  /* ---- Insight strip ---- */
+  .insight-strip{ display:flex; gap:10px; overflow-x:auto; margin:0 -16px 20px; padding:0 16px 2px; scroll-snap-type:x mandatory; scrollbar-width:none; }
+  .insight-strip::-webkit-scrollbar{ display:none; }
+  .insight-card{
+    flex:none; width:132px; scroll-snap-align:start;
+    background:var(--bg-elevated); border-radius:var(--radius-md);
+    padding:12px 14px; box-shadow:var(--shadow-card);
+  }
+  .insight-card .label{ font-size:11.5px; font-weight:600; color:var(--label-secondary); text-transform:uppercase; letter-spacing:0.02em; }
+  .insight-card .value{ font-size:20px; font-weight:800; margin-top:6px; font-variant-numeric:tabular-nums; letter-spacing:-0.01em; }
+  .insight-card .sub{ font-size:11.5px; color:var(--label-tertiary); margin-top:2px; }
+  .insight-card.alert .value{ color:var(--red); }
+
+  .section-label{ font-size:13px; font-weight:700; color:var(--label-secondary); text-transform:uppercase; letter-spacing:0.03em; margin:0 2px 8px; }
+
+  /* ---- Swipeable row shell (shared: mail + tasks) ---- */
+  .swipe-row{ position:relative; border-radius:var(--radius-md); overflow:hidden; margin-bottom:10px; background:var(--bg-elevated); box-shadow:var(--shadow-card); }
+  .row-actions{ position:absolute; top:0; right:0; bottom:0; display:flex; }
+  .row-action{
+    width:76px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    color:#fff; font-size:11px; font-weight:600;
+  }
+  .row-action.action-call{ background:var(--green); }
+  .row-action.action-email{ background:var(--blue); }
+  .row-action.action-task{ background:var(--accent); }
+  .row-action.action-delete{ background:var(--red); width:84px; }
+  .row-content{ position:relative; background:var(--bg-elevated); touch-action:pan-y; will-change:transform; }
+
+  /* ---- Mail row ---- */
+  .mail-row-content{ display:flex; gap:12px; padding:13px 14px; align-items:flex-start; }
+  .mail-icon{
+    flex:none; width:38px; height:38px; border-radius:11px;
+    background:var(--fill); display:flex; align-items:center; justify-content:center;
+    font-size:19px;
+  }
+  .mail-main{ min-width:0; flex:1; }
+  .mail-top{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .mail-sender{ font-size:15.5px; font-weight:700; letter-spacing:-0.01em; }
+  .mail-time{ flex:none; font-size:12px; color:var(--label-tertiary); }
+  .mail-title-line{ font-size:13.5px; color:var(--label-secondary); font-weight:600; margin-top:1px; }
+  .mail-summary{ font-size:13.5px; color:var(--label-secondary); margin-top:3px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .mail-meta{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .meta-chip{ font-size:11.5px; font-weight:700; padding:3px 8px; border-radius:7px; }
+  .meta-chip.high{ background:var(--red-tint); color:var(--red); }
+  .meta-chip.medium{ background:var(--orange-tint); color:var(--orange); }
+  .meta-chip.low{ background:var(--green-tint); color:var(--green); }
+  .meta-amount{ font-size:12.5px; font-weight:700; padding:3px 2px; color:var(--label); font-variant-numeric:tabular-nums; }
+  .unread-dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); flex:none; margin-top:6px; }
+
+  .empty-state{ text-align:center; padding:60px 24px; color:var(--label-secondary); }
+  .empty-state .glyph{ font-size:34px; margin-bottom:10px; }
+  .empty-state .title{ font-size:16px; font-weight:700; color:var(--label); }
+  .empty-state .sub{ font-size:13.5px; margin-top:4px; }
+
+  /* ---- FAB ---- */
+  .fab{
+    position:absolute; right:20px; bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 16px);
+    width:56px; height:56px; border-radius:50%;
+    background:var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 20px rgba(179,84,30,0.4), 0 2px 6px rgba(0,0,0,0.15);
+    transition:transform .12s;
+    z-index:20;
+  }
+  .fab:active{ transform:scale(0.92); }
+
+  /* ---- Tab bar ---- */
+  .tab-bar{
+    position:absolute; left:0; right:0; bottom:0; z-index:30;
+    display:flex;
+    padding-bottom:var(--safe-bottom);
+    background:var(--bg-translucent);
+    backdrop-filter:blur(20px) saturate(180%);
+    -webkit-backdrop-filter:blur(20px) saturate(180%);
+    border-top:0.5px solid var(--separator);
+  }
+  .tab-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    height:var(--tabbar-h);
+    color:var(--label-tertiary);
+  }
+  .tab-btn span{ font-size:10.5px; font-weight:600; }
+  .tab-btn.active{ color:var(--accent); }
+  .tab-btn:active svg{ transform:scale(0.9); }
+
+  /* ---- Sheets ---- */
+  .sheet-scrim{
+    position:absolute; inset:0; background:rgba(0,0,0,0.38);
+    opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:40;
+  }
+  .sheet-scrim.show{ opacity:1; pointer-events:auto; }
+  .sheet{
+    position:absolute; left:0; right:0; bottom:0; z-index:41;
+    max-height:88%; display:flex; flex-direction:column;
+    background:var(--bg-grouped);
+    border-radius:24px 24px 0 0;
+    box-shadow:0 -10px 40px rgba(0,0,0,0.25);
+    transform:translateY(100%);
+    visibility:hidden;
+    /* visibility flips to hidden only once the slide-down finishes, so a closed sheet never
+       leaves a stray sliver visible even if its translateY(100%) basis is off by a few px */
+    transition:transform .32s cubic-bezier(.32,.72,0,1), visibility 0s linear .32s;
+    padding-bottom:var(--safe-bottom);
+  }
+  .sheet.show{
+    transform:translateY(0);
+    visibility:visible;
+    transition:transform .32s cubic-bezier(.32,.72,0,1), visibility 0s linear;
+  }
+  .sheet-handle-row{ display:flex; justify-content:center; padding:8px 0 2px; flex:none; touch-action:none; }
+  .sheet-handle{ width:36px; height:5px; border-radius:3px; background:var(--fill-strong); }
+  .sheet-body{ overflow-y:auto; padding:6px 20px 20px; }
+
+  .detail-header{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .detail-icon{ width:44px; height:44px; border-radius:13px; background:var(--fill); display:flex; align-items:center; justify-content:center; font-size:22px; flex:none; }
+  .detail-sender{ font-size:18px; font-weight:800; letter-spacing:-0.01em; }
+  .detail-title{ font-size:14px; color:var(--label-secondary); font-weight:600; margin-top:1px; }
+  .detail-badges{ display:flex; gap:6px; margin-bottom:14px; }
+  .badge{ font-size:12px; font-weight:700; padding:4px 10px; border-radius:8px; background:var(--fill); }
+  .badge.high{ background:var(--red-tint); color:var(--red); }
+  .badge.medium{ background:var(--orange-tint); color:var(--orange); }
+  .badge.low{ background:var(--green-tint); color:var(--green); }
+  .detail-text{ font-size:14.5px; line-height:1.5; color:var(--label); background:var(--fill); border-radius:var(--radius-md); padding:14px; margin-bottom:16px; }
+  .action-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px; }
+  .action-grid.cols-2{ grid-template-columns:repeat(2,1fr); }
+  .big-action{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    padding:14px 6px; border-radius:var(--radius-md);
+    background:var(--fill); font-size:12.5px; font-weight:700;
+  }
+  .big-action.primary{ background:var(--accent); color:#fff; }
+  .big-action:active{ transform:scale(0.96); }
+
+  .field-label{ font-size:13px; font-weight:700; color:var(--label-secondary); margin:16px 0 6px; text-transform:uppercase; letter-spacing:0.02em; }
+  .text-input, .date-input{
+    width:100%; background:var(--fill); border:none; border-radius:12px;
+    padding:13px 14px; font-size:16px; color:var(--label); outline:none;
+  }
+  .sheet-save{
+    margin-top:20px; width:100%; padding:14px; border-radius:14px;
+    background:var(--accent); color:#fff; font-size:16px; font-weight:700; text-align:center;
+  }
+  .sheet-save:active{ opacity:0.85; }
+  .sheet-title-row{ display:flex; align-items:center; justify-content:space-between; padding:2px 20px 10px; }
+  .sheet-title{ font-size:17px; font-weight:700; }
+
+  /* ---- Task rows ---- */
+  .task-row-content{ display:flex; align-items:flex-start; gap:12px; padding:14px; }
+  .task-check{ flex:none; color:var(--label-tertiary); margin-top:1px; }
+  .task-row.done .task-check{ color:var(--green); }
+  .task-title{ font-size:15px; font-weight:600; }
+  .task-row.done .task-title{ color:var(--label-tertiary); text-decoration:line-through; }
+  .task-sub{ font-size:12.5px; color:var(--label-tertiary); margin-top:2px; }
+
+  /* ---- Account ---- */
+  .profile-card{ display:flex; align-items:center; gap:14px; padding:16px 4px 22px; }
+  .avatar{ width:60px; height:60px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; flex:none; }
+  .profile-name{ font-size:19px; font-weight:800; }
+  .profile-email{ font-size:13.5px; color:var(--label-secondary); margin-top:1px; }
+  .list-group{ background:var(--bg-elevated); border-radius:var(--radius-md); overflow:hidden; box-shadow:var(--shadow-card); margin-bottom:20px; }
+  .list-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 14px; border-bottom:0.5px solid var(--separator); min-height:24px; }
+  .list-row:last-child{ border-bottom:none; }
+  .list-row .row-title{ font-size:15.5px; font-weight:500; }
+  .list-row .row-value{ font-size:14.5px; color:var(--label-tertiary); }
+  .list-row.danger .row-title{ color:var(--red); font-weight:600; }
+  .list-row:active{ background:var(--fill); }
+
+  .switch{ width:46px; height:28px; border-radius:14px; background:var(--fill-strong); position:relative; transition:background-color .2s; flex:none; }
+  .switch::after{ content:''; position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.3); transition:transform .2s; }
+  .switch.on{ background:var(--green); }
+  .switch.on::after{ transform:translateX(18px); }
+
+  .version-footer{ text-align:center; font-size:12px; color:var(--label-tertiary); padding:10px 0 4px; }
+
+  /* ---- Toast ---- */
+  .toast{
+    position:absolute; left:50%; bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 16px); z-index:50;
+    transform:translate(-50%, 16px); opacity:0; pointer-events:none;
+    transition:transform .25s ease, opacity .25s ease;
+    background:var(--label); color:var(--bg);
+    padding:11px 18px; border-radius:14px; font-size:13.5px; font-weight:600;
+    white-space:nowrap; box-shadow:0 8px 24px rgba(0,0,0,0.25);
+    max-width:calc(100% - 40px); overflow:hidden; text-overflow:ellipsis;
+  }
+  .toast.show{ transform:translate(-50%, 0); opacity:1; }
+
   @media (prefers-reduced-motion: reduce){
-    .card, .stat-card{ transition:none !important; }
-    .card:hover, .stat-card:hover{ transform:none !important; }
-    .fade-in{ animation:none !important; }
+    *{ transition-duration:0.001ms !important; animation-duration:0.001ms !important; }
   }
 </style>
 </head>
-<body class="text-stone-800 antialiased">
-  <header class="sticky top-0 z-40 bg-[#f6ecd2]/85 backdrop-blur-xl border-b border-[#5a4a2a]/10">
-    <div class="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
-      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#6a5834] to-[#3f321c] shadow-[0_4px_14px_rgba(90,74,42,0.3)] flex items-center justify-center shrink-0">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-[#f6ecd2]">
-          <path d="M4 6.5C4 5.67 4.67 5 5.5 5h13c.83 0 1.5.67 1.5 1.5v11c0 .83-.67 1.5-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11Z" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M4 7l8 5.5L20 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <rect x="7" y="11" width="10" height="6" rx="1.2" fill="currentColor" opacity=".2"/>
-        </svg>
+<body>
+<div class="app-shell" id="appShell">
+
+  <!-- INBOX -->
+  <section class="panel" id="panel-inbox" data-panel>
+    <header class="navbar" data-navbar>
+      <div class="navbar-row"><h1 class="large-title">Inbox</h1></div>
+      <div class="navbar-compact">Inbox</div>
+    </header>
+    <div class="scroll-area" data-scroll>
+      <div class="search-field" id="searchField">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="searchInput" type="text" placeholder="Search Mail" autocomplete="off" />
+        <button class="search-clear" id="searchClear" aria-label="Clear search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity=".18"/><path d="M8.5 8.5l7 7m0-7l-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
       </div>
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2">
-          <h1 class="text-[26px] font-extrabold tracking-tight text-[#5a4a2a]">MailSort</h1>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#5a4a2a]/10 text-[#5a4a2a] border border-[#5a4a2a]/15">BETA</span>
-        </div>
-        <p class="text-[13px] sm:text-[14px] leading-snug text-[#5a4a2a]/75 -mt-0.5">The first inbox that reads your mail, predicts your bills, and tells you what to do next.</p>
-      </div>
-      <div class="hidden sm:flex items-center gap-2">
-        <button class="px-3 py-2 rounded-xl text-sm font-medium bg-white border border-[#5a4a2a]/15 text-[#5a4a2a] hover:bg-[#fff8e6] transition">Help</button>
-        <button class="px-3 py-2 rounded-xl text-sm font-medium bg-gradient-to-b from-[#6a5834] to-[#4a3d22] text-[#f6ecd2] hover:from-[#5a4a2a] hover:to-[#3f321c] shadow-sm transition">Invite</button>
+
+      <div class="chip-row" id="chipRow"></div>
+      <div class="insight-strip" id="insightStrip"></div>
+
+      <h2 class="section-label">Recent Mail</h2>
+      <ul class="mail-list" id="mailList"></ul>
+      <div class="empty-state" id="mailEmpty" hidden>
+        <div class="glyph">🔍</div>
+        <div class="title">No mail found</div>
+        <div class="sub">Try a different search or filter.</div>
       </div>
     </div>
-  </header>
 
-  <div class="max-w-[1200px] mx-auto px-4 sm:px-6 mt-4">
-    <div class="flex gap-2.5 items-start bg-amber-50/90 border border-amber-200 text-amber-900 rounded-2xl p-3 sm:p-3.5 text-[13px] leading-snug">
-      <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
-      <p><strong class="font-semibold">This is a prototype</strong> based on your Opal prompt — upload real mail to populate. Scan, categorize, and thread detection are simulated with sample data. Everything shown here stays in this browser tab; nothing is uploaded anywhere.</p>
+    <button class="fab" id="scanFab" aria-label="Scan mail">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 0 1 2-2h1l1.2-1.6A2 2 0 0 1 9.8 3.6h4.4a2 2 0 0 1 1.6.8L17 6h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    </button>
+    <input id="fileInput" type="file" accept="image/*" capture="environment" hidden />
+  </section>
+
+  <!-- TASKS -->
+  <section class="panel" id="panel-tasks" data-panel hidden>
+    <header class="navbar" data-navbar>
+      <div class="navbar-row">
+        <h1 class="large-title">Tasks</h1>
+        <button class="nav-action" id="addTaskBtn" aria-label="Add task">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <div class="navbar-compact">Tasks</div>
+    </header>
+    <div class="scroll-area" data-scroll>
+      <ul class="mail-list" id="taskList"></ul>
+      <div class="empty-state" id="taskEmpty" hidden>
+        <div class="glyph">✅</div>
+        <div class="title">Nothing on your plate</div>
+        <div class="sub">Tasks you create from mail — or add yourself — show up here.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACCOUNT -->
+  <section class="panel" id="panel-account" data-panel hidden>
+    <header class="navbar" data-navbar>
+      <div class="navbar-row"><h1 class="large-title">Account</h1></div>
+      <div class="navbar-compact">Account</div>
+    </header>
+    <div class="scroll-area" data-scroll>
+      <div class="profile-card">
+        <div class="avatar">JC</div>
+        <div>
+          <div class="profile-name">Jordan Casey</div>
+          <div class="profile-email">jordan@example.com</div>
+        </div>
+      </div>
+
+      <div class="list-group">
+        <div class="list-row">
+          <span class="row-title">Notifications</span>
+          <button class="switch on" id="notifSwitch"></button>
+        </div>
+        <button class="list-row" id="privacyRow">
+          <span class="row-title">Privacy &amp; Data</span>
+          <span class="row-value">On-device</span>
+        </button>
+        <div class="list-row">
+          <span class="row-title">Storage</span>
+          <span class="row-value">6 items</span>
+        </div>
+      </div>
+
+      <div class="list-group">
+        <button class="list-row danger" id="signOutRow">
+          <span class="row-title">Sign Out</span>
+        </button>
+      </div>
+
+      <div class="version-footer">MailSort 1.0 (2026.7)</div>
+    </div>
+  </section>
+
+  <!-- TAB BAR -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="inbox">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5C4 5.67 4.67 5 5.5 5h13c.83 0 1.5.67 1.5 1.5v11c0 .83-.67 1.5-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11Z"/><path d="M4 7l8 5.5L20 7"/></svg>
+      <span>Inbox</span>
+    </button>
+    <button class="tab-btn" data-tab="tasks">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8.5 12 2.3 2.3L15.5 9.5"/></svg>
+      <span>Tasks</span>
+    </button>
+    <button class="tab-btn" data-tab="account">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.4"/><path d="M5 19.2c1.3-3 4-4.7 7-4.7s5.7 1.7 7 4.7"/></svg>
+      <span>Account</span>
+    </button>
+  </nav>
+
+  <!-- DETAIL SHEET -->
+  <div class="sheet-scrim" id="detailScrim" hidden></div>
+  <div class="sheet" id="detailSheet" hidden>
+    <div class="sheet-handle-row" id="detailHandle"><div class="sheet-handle"></div></div>
+    <div class="sheet-body" id="detailBody"></div>
+  </div>
+
+  <!-- ADD TASK SHEET -->
+  <div class="sheet-scrim" id="taskScrim" hidden></div>
+  <div class="sheet" id="taskSheet" hidden>
+    <div class="sheet-handle-row" id="taskHandle"><div class="sheet-handle"></div></div>
+    <div class="sheet-title-row"><span class="sheet-title">New Task</span></div>
+    <div class="sheet-body">
+      <div class="field-label">Title</div>
+      <input class="text-input" id="taskTitleInput" type="text" placeholder="What do you need to do?" />
+      <div class="field-label">Due date</div>
+      <input class="date-input" id="taskDateInput" type="date" />
+      <button class="sheet-save" id="taskSaveBtn">Add Task</button>
     </div>
   </div>
 
-  <!-- Mail Intelligence -->
-  <div class="max-w-[1200px] mx-auto px-4 sm:px-6 mt-4">
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="stat-card bg-white rounded-2xl border border-[#5a4a2a]/10 shadow-[0_4px_16px_rgba(90,74,42,0.05)] p-4">
-        <p class="text-[11px] font-medium text-stone-500 uppercase tracking-wide">Total upcoming</p>
-        <p id="statTotalDue" class="tabular text-2xl font-extrabold text-[#5a4a2a] mt-1">$0.00</p>
-        <p class="text-[11px] text-stone-500 mt-0.5">Across every open deadline</p>
-      </div>
-      <div class="stat-card bg-white rounded-2xl border border-[#5a4a2a]/10 shadow-[0_4px_16px_rgba(90,74,42,0.05)] p-4">
-        <p class="text-[11px] font-medium text-stone-500 uppercase tracking-wide">Next deadline</p>
-        <p class="mt-1"><span id="statNext" class="tabular text-2xl font-extrabold text-[#5a4a2a]">—</span></p>
-        <p id="statNextLabel" class="text-[11px] text-stone-500 mt-0.5 truncate">Nothing due yet</p>
-      </div>
-      <div class="stat-card bg-white rounded-2xl border border-[#5a4a2a]/10 shadow-[0_4px_16px_rgba(90,74,42,0.05)] p-4">
-        <p class="text-[11px] font-medium text-stone-500 uppercase tracking-wide">High urgency</p>
-        <p id="statHighCount" class="tabular text-2xl font-extrabold text-red-600 mt-1">0</p>
-        <p class="text-[11px] text-stone-500 mt-0.5">Need attention this week</p>
-      </div>
-      <div class="stat-card bg-white rounded-2xl border border-[#5a4a2a]/10 shadow-[0_4px_16px_rgba(90,74,42,0.05)] p-4">
-        <p class="text-[11px] font-medium text-stone-500 uppercase tracking-wide">Items digitized</p>
-        <p id="statTotalItems" class="tabular text-2xl font-extrabold text-[#5a4a2a] mt-1">0</p>
-        <p class="text-[11px] text-stone-500 mt-0.5">Auto-filed, zero manual sorting</p>
-      </div>
-    </div>
-  </div>
-
-  <main class="max-w-[1200px] mx-auto px-4 sm:px-6 py-6">
-    <!-- Top 3 -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <!-- Inbox / Scan -->
-      <section class="card bg-white rounded-[28px] border border-[#5a4a2a]/10 shadow-[0_6px_24px_rgba(90,74,42,0.06)] p-5 sm:p-6">
-        <div class="flex items-start justify-between">
-          <div>
-            <h2 class="text-[17px] font-semibold text-[#5a4a2a]">Inbox</h2>
-            <p class="text-[13px] text-stone-500 mt-0.5">Scan physical mail to auto-extract</p>
-          </div>
-          <span class="text-[11px] font-medium px-2.5 py-1 rounded-full bg-[#f6ecd2] text-[#5a4a2a] border border-[#5a4a2a]/10">4 new today</span>
-        </div>
-
-        <div id="dropZone" class="mt-4 rounded-2xl border border-dashed border-[#5a4a2a]/20 bg-[#fcf7e8] p-4 transition">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-white border border-[#5a4a2a]/10 flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5a4a2a" stroke-width="1.7"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>
-            </div>
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-[#5a4a2a]">Drop a photo or scan</p>
-              <p class="text-xs text-stone-500">Auto OCR • categorize • detect deadlines</p>
-            </div>
-          </div>
-          <button id="uploadBtn" class="mt-4 w-full bg-gradient-to-b from-[#6a5834] to-[#483b21] hover:from-[#5a4a2a] hover:to-[#3f321c] active:to-[#332911] text-[#f6ecd2] rounded-2xl py-3 font-medium transition flex items-center justify-center gap-2 shadow-sm">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Upload mail photo
-          </button>
-          <input id="fileInput" type="file" accept="image/*" class="hidden" />
-          <p class="mt-2 text-[11px] text-stone-500 text-center">or drag a file anywhere in this box</p>
-          <div class="mt-3 flex flex-wrap gap-1.5 text-[11px] text-stone-600">
-            <span class="px-2 py-1 bg-white rounded-lg border border-[#5a4a2a]/10">Dates</span>
-            <span class="px-2 py-1 bg-white rounded-lg border border-[#5a4a2a]/10">Amounts</span>
-            <span class="px-2 py-1 bg-white rounded-lg border border-[#5a4a2a]/10">Sender</span>
-            <span class="px-2 py-1 bg-white rounded-lg border border-[#5a4a2a]/10">Threads</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- Drawers -->
-      <section class="card bg-white rounded-[28px] border border-[#5a4a2a]/10 shadow-[0_6px_24px_rgba(90,74,42,0.06)] p-5 sm:p-6">
-        <div class="flex items-center justify-between">
-          <h2 class="text-[17px] font-semibold text-[#5a4a2a]">Drawers</h2>
-          <button id="clearFilter" class="text-xs text-[#5a4a2a]/70 hover:underline hidden">Clear</button>
-        </div>
-        <div id="drawerGrid" class="mt-3 grid grid-cols-2 gap-2.5"></div>
-        <p class="mt-3 text-[12px] text-stone-500">Tap a drawer to filter. Auto-filing learns from your corrections.</p>
-      </section>
-
-      <!-- Upcoming Deadlines -->
-      <section class="card bg-white rounded-[28px] border border-[#5a4a2a]/10 shadow-[0_6px_24px_rgba(90,74,42,0.06)] p-5 sm:p-6">
-        <div class="flex items-center justify-between">
-          <h2 class="text-[17px] font-semibold text-[#5a4a2a]">Upcoming Deadlines</h2>
-          <span class="text-[11px] px-2 py-1 rounded-full bg-stone-100 text-stone-600">Auto-detected</span>
-        </div>
-        <ul id="deadlineList" class="mt-3 space-y-2.5"></ul>
-      </section>
-    </div>
-
-    <!-- Controls -->
-    <div class="mt-8 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-      <div class="flex items-center gap-2 flex-wrap">
-        <h3 class="text-[20px] font-semibold text-[#5a4a2a]">Recent Mail</h3>
-        <span id="activeFilterBadge" class="hidden px-2.5 py-1 rounded-full text-xs font-medium bg-[#5a4a2a] text-[#f6ecd2]"></span>
-      </div>
-      <div class="flex items-center gap-2 flex-wrap">
-        <div class="relative">
-          <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.3-4.3M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
-          <input id="searchInput" type="text" placeholder="Search sender or subject" class="pl-9 pr-3 py-2 text-sm bg-white border border-[#5a4a2a]/10 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5a4a2a]/20 w-full sm:w-56" />
-        </div>
-        <div class="flex bg-white rounded-2xl border border-[#5a4a2a]/10 p-1 shadow-sm">
-          <button id="btnCards" class="px-3.5 py-1.5 text-sm font-medium rounded-xl bg-[#5a4a2a] text-[#f6ecd2]">Cards</button>
-          <button id="btnTimeline" class="px-3.5 py-1.5 text-sm font-medium rounded-xl text-[#5a4a2a]/70 hover:text-[#5a4a2a]">Timeline</button>
-        </div>
-        <select id="sortSelect" class="bg-white border border-[#5a4a2a]/10 rounded-2xl px-3 py-2 text-sm text-[#5a4a2a] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5a4a2a]/20">
-          <option value="newest">Newest</option>
-          <option value="urgency">Urgency</option>
-          <option value="deadline">Deadline</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Cards Grid -->
-    <div id="cardsView" class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
-    <div id="emptyState" class="hidden mt-4 bg-white rounded-[28px] border border-dashed border-[#5a4a2a]/20 p-10 text-center">
-      <p class="text-[15px] font-medium text-[#5a4a2a]">No mail matches that search</p>
-      <p class="text-[13px] text-stone-500 mt-1">Try a different sender, subject, or clear the drawer filter.</p>
-    </div>
-
-    <!-- Timeline View -->
-    <div id="timelineView" class="hidden mt-4">
-      <div class="bg-white rounded-[28px] border border-[#5a4a2a]/10 shadow-[0_6px_24px_rgba(90,74,42,0.06)] p-5 sm:p-7">
-        <div class="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h3 class="text-lg font-semibold text-[#5a4a2a] flex items-center gap-2">
-              <span class="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">⚡</span>
-              PG&E 2026 Thread
-            </h3>
-            <p class="text-sm text-stone-600 mt-1">4 linked bills • Usage trending +12% vs last year • Auto-pay off</p>
-          </div>
-          <div class="flex gap-2">
-            <span class="text-xs px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200">High urgency</span>
-            <span class="text-xs px-2.5 py-1 rounded-full bg-stone-100 text-stone-700 border">Thread detected</span>
-          </div>
-        </div>
-
-        <!-- timeline -->
-        <div class="mt-8 relative">
-          <div class="hidden md:block absolute top-[42px] left-[5%] right-[5%] h-[2px] bg-gradient-to-r from-[#5a4a2a]/10 via-[#5a4a2a]/30 to-[#5a4a2a]/10"></div>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
-            <!-- May -->
-            <div class="relative">
-              <div class="bg-[#fcf7e8] rounded-2xl border border-[#5a4a2a]/10 p-4">
-                <div class="flex items-center justify-between">
-                  <p class="text-xs text-stone-500">May</p>
-                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Paid</span>
-                </div>
-                <p class="mt-1 font-semibold text-[#5a4a2a] tabular">$112.10</p>
-                <p class="text-xs text-stone-600 mt-1">Due May 15 • Paid May 14</p>
-                <div class="mt-3 h-10 flex items-end gap-1">
-                  <div class="w-6 bg-[#5a4a2a]/20 rounded" style="height:65%"></div>
-                </div>
-              </div>
-              <div class="hidden md:flex absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-[#5a4a2a] ring-4 ring-[#f6ecd2]"></div>
-            </div>
-            <!-- Jun -->
-            <div class="relative">
-              <div class="bg-[#fcf7e8] rounded-2xl border border-[#5a4a2a]/10 p-4">
-                <div class="flex items-center justify-between">
-                  <p class="text-xs text-stone-500">Jun</p>
-                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Paid</span>
-                </div>
-                <p class="mt-1 font-semibold text-[#5a4a2a] tabular">$98.45</p>
-                <p class="text-xs text-stone-600 mt-1">Due Jun 15 • Paid Jun 13</p>
-                <div class="mt-3 h-10 flex items-end gap-1">
-                  <div class="w-6 bg-[#5a4a2a]/20 rounded" style="height:55%"></div>
-                </div>
-              </div>
-              <div class="hidden md:flex absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-[#5a4a2a] ring-4 ring-[#f6ecd2]"></div>
-            </div>
-            <!-- Jul -->
-            <div class="relative">
-              <div class="bg-[#fcf7e8] rounded-2xl border border-[#5a4a2a]/10 p-4">
-                <div class="flex items-center justify-between">
-                  <p class="text-xs text-stone-500">Jul</p>
-                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Paid</span>
-                </div>
-                <p class="mt-1 font-semibold text-[#5a4a2a] tabular">$134.20</p>
-                <p class="text-xs text-stone-600 mt-1">Due Jul 15 • Paid Jul 12</p>
-                <div class="mt-3 h-10 flex items-end gap-1">
-                  <div class="w-6 bg-orange-400/70 rounded" style="height:85%"></div>
-                </div>
-              </div>
-              <div class="hidden md:flex absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-[#5a4a2a] ring-4 ring-[#f6ecd2]"></div>
-            </div>
-            <!-- Aug current -->
-            <div class="relative">
-              <div class="bg-white rounded-2xl border-2 border-red-300 shadow-[0_0_0_3px_rgba(248,113,113,0.15)] p-4">
-                <div class="flex items-center justify-between">
-                  <p class="text-xs text-red-600 font-medium">Aug • Current</p>
-                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700">Due in 17d</span>
-                </div>
-                <p class="mt-1 font-semibold text-[#5a4a2a] tabular">$127.43</p>
-                <p class="text-xs text-stone-700 mt-1">Due Aug 15, 2026</p>
-                <button data-create="1" class="mt-3 w-full text-xs font-medium bg-[#5a4a2a] text-[#f6ecd2] rounded-xl py-2 hover:bg-[#483b21] transition">Create Task & Reminder</button>
-              </div>
-              <div class="hidden md:flex absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-red-500 ring-4 ring-[#f6ecd2] animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-8 grid sm:grid-cols-3 gap-3">
-          <div class="rounded-2xl bg-[#fcf7e8] border border-[#5a4a2a]/10 p-4">
-            <p class="text-xs text-stone-500">Summary</p>
-            <p class="text-sm mt-1 text-[#5a4a2a]">July bill shows AC usage spike. PG&E suggests Time-of-Use plan could save ~$18/mo.</p>
-          </div>
-          <div class="rounded-2xl bg-[#fcf7e8] border border-[#5a4a2a]/10 p-4">
-            <p class="text-xs text-stone-500">Detected Pattern</p>
-            <p class="text-sm mt-1 text-[#5a4a2a]">Bills arrive around 28th each month. Average $118 over 4 months.</p>
-          </div>
-          <div class="rounded-2xl bg-[#fcf7e8] border border-[#5a4a2a]/10 p-4">
-            <p class="text-xs text-stone-500">Next Action</p>
-            <p class="text-sm mt-1 text-[#5a4a2a]">Set reminder Aug 14 at 9am. Enable auto-pay to avoid late fee.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <footer class="max-w-[1200px] mx-auto px-4 sm:px-6 pb-10 text-center">
-    <p class="text-[12px] text-[#5a4a2a]/60">Private by design — mail images are processed in this browser tab only, and are never uploaded or stored remotely.</p>
-  </footer>
-
-  <!-- Toast -->
-  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden">
-    <div class="bg-[#5a4a2a] text-[#f6ecd2] px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-sm font-medium">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
-      <span id="toastText">Done</span>
-    </div>
-  </div>
+  <div class="toast" id="toast"></div>
+</div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+(function(){
   const NOW = new Date('2026-07-29T12:00:00');
+  const TASKS_KEY = 'mailsort:tasks:v1';
 
   const mailItems = [
     {
-      id: 1,
-      sender: "PG&E",
-      title: "Monthly Electric Bill",
-      category: "Bills",
-      date: "2026-07-28",
-      received: "Today 9:42 AM",
-      summary: "Your July electricity bill is ready. Usage up 12% vs last month due to AC.",
-      amount: "$127.43",
-      deadline: "2026-08-15",
-      urgency: "high",
-      thread: "PG&E 2026",
-      threadCount: 4,
-      confidence: 97,
-      icon: "⚡",
-      details: "Account ending 4821 • Service period Jun 26 - Jul 25 • Auto-pay is OFF. Late fee $5 after due date."
+      id:1, sender:"PG&E", title:"Monthly Electric Bill", category:"Bills",
+      date:"2026-07-28", received:"9:42 AM",
+      summary:"Your July electricity bill is ready. Usage up 12% vs last month due to AC.",
+      amount:"$127.43", deadline:"2026-08-15", urgency:"high",
+      thread:"PG&E 2026", threadCount:4, confidence:97, icon:"⚡",
+      phone:"+18007435000", email:"support@pge.com",
+      details:"Account ending 4821 • Service period Jun 26 – Jul 25 • Auto-pay is OFF. Late fee $5 after due date."
     },
     {
-      id: 4,
-      sender: "Rancho Mesa HOA",
-      title: "HOA Notice — Balcony Inspection",
-      category: "Bills",
-      date: "2026-07-26",
-      received: "2 days ago",
-      summary: "Mandatory balcony inspection scheduled. Submit certificate by Jul 20 or $250 fine.",
-      amount: null,
-      deadline: "2026-07-20",
-      urgency: "high",
-      thread: "HOA 2026",
-      threadCount: 2,
-      confidence: 91,
-      icon: "🏘️",
-      details: "Inspection window Aug 1-15. Upload certificate to portal. Previous notice sent Jun 10."
+      id:4, sender:"Rancho Mesa HOA", title:"Balcony Inspection Notice", category:"Bills",
+      date:"2026-07-26", received:"2d ago",
+      summary:"Mandatory balcony inspection scheduled. Submit certificate by Jul 20 or $250 fine.",
+      amount:null, deadline:"2026-07-20", urgency:"high",
+      thread:"HOA 2026", threadCount:2, confidence:91, icon:"🏘️",
+      phone:"+19255550142", email:"management@ranchomesahoa.example",
+      details:"Inspection window Aug 1–15. Upload certificate to portal. Previous notice sent Jun 10."
     },
     {
-      id: 2,
-      sender: "California DMV",
-      title: "Registration Renewal",
-      category: "Government",
-      date: "2026-07-27",
-      received: "Yesterday",
-      summary: "2021 Toyota Camry registration expires Sep 3. Renew online to avoid late fee.",
-      amount: "$178.00",
-      deadline: "2026-09-03",
-      urgency: "medium",
-      thread: "DMV - Camry",
-      threadCount: 1,
-      isNewThread: true,
-      confidence: 95,
-      icon: "🚗",
-      details: "License 8ABC123 • Renewal fee $178 • Smog check required. Mail-in option closes Aug 20."
+      id:2, sender:"California DMV", title:"Registration Renewal", category:"Government",
+      date:"2026-07-27", received:"Yesterday",
+      summary:"2021 Toyota Camry registration expires Sep 3. Renew online to avoid late fee.",
+      amount:"$178.00", deadline:"2026-09-03", urgency:"medium",
+      thread:"DMV · Camry", threadCount:1, isNewThread:true, confidence:95, icon:"🚗",
+      phone:"+18007770133", email:null,
+      details:"License 8ABC123 • Renewal fee $178 • Smog check required. Mail-in option closes Aug 20."
     },
     {
-      id: 5,
-      sender: "State Farm",
-      title: "Auto Policy Renewal",
-      category: "Insurance",
-      date: "2026-07-22",
-      received: "5 days ago",
-      summary: "Policy renews Oct 1. No action needed unless changing coverage.",
-      amount: "$642.00",
-      deadline: "2026-10-01",
-      urgency: "medium",
-      thread: "State Farm Auto",
-      threadCount: 3,
-      confidence: 99,
-      icon: "🛡️",
-      details: "Good driver discount applied. Consider bundling home for additional savings. Premium billed per 6-month term."
+      id:5, sender:"State Farm", title:"Auto Policy Renewal", category:"Insurance",
+      date:"2026-07-22", received:"5d ago",
+      summary:"Policy renews Oct 1. No action needed unless changing coverage.",
+      amount:"$642.00", deadline:"2026-10-01", urgency:"medium",
+      thread:"State Farm Auto", threadCount:3, confidence:99, icon:"🛡️",
+      phone:"+18007828332", email:null,
+      details:"Good driver discount applied. Premium billed per 6-month term. Consider bundling home for additional savings."
     },
     {
-      id: 3,
-      sender: "Kaiser Permanente",
-      title: "Explanation of Benefits",
-      category: "Medical",
-      date: "2026-07-25",
-      received: "3 days ago",
-      summary: "EOB for Jun 18 visit. Plan paid $142. You owe $0.",
-      amount: "$0.00",
-      deadline: null,
-      urgency: "low",
-      thread: "Kaiser 2026",
-      threadCount: 5,
-      confidence: 93,
-      icon: "🏥",
-      details: "Linked to previous Kaiser letter from June 12 regarding referral. No action required. Save for records."
+      id:3, sender:"Kaiser Permanente", title:"Explanation of Benefits", category:"Medical",
+      date:"2026-07-25", received:"3d ago",
+      summary:"EOB for Jun 18 visit. Plan paid $142. You owe $0.",
+      amount:"$0.00", deadline:null, urgency:"low",
+      thread:"Kaiser 2026", threadCount:5, confidence:93, icon:"🏥",
+      phone:"+18004644000", email:null,
+      details:"Linked to previous Kaiser letter from June 12 regarding referral. No action required — save for records."
     },
     {
-      id: 6,
-      sender: "Chase Bank",
-      title: "Monthly Statement",
-      category: "Bank",
-      date: "2026-07-24",
-      received: "4 days ago",
-      summary: "June statement available. No unusual activity detected.",
-      amount: null,
-      deadline: null,
-      urgency: "low",
-      thread: "Chase Checking",
-      threadCount: 12,
-      confidence: 99,
-      icon: "🏦",
-      details: "Closing balance $4,218.33. 47 transactions. Auto-categorized 12 receipts."
+      id:6, sender:"Chase Bank", title:"Monthly Statement", category:"Bank",
+      date:"2026-07-24", received:"4d ago",
+      summary:"June statement available. No unusual activity detected.",
+      amount:null, deadline:null, urgency:"low",
+      thread:"Chase Checking", threadCount:12, confidence:99, icon:"🏦",
+      phone:"+18009359935", email:null,
+      details:"Closing balance $4,218.33 · 47 transactions · 12 receipts auto-categorized."
     },
   ];
 
   const drawerMeta = {
-    All: { icon: "📥", desc: "Everything" },
-    Bills: { icon: "🧾", desc: "Utilities & HOA" },
-    Insurance: { icon: "🛡️", desc: "Policies" },
-    Bank: { icon: "🏦", desc: "Statements" },
-    Medical: { icon: "🏥", desc: "EOBs & visits" },
-    Government: { icon: "🏛️", desc: "DMV & gov" },
+    All:{ icon:"📥" }, Bills:{ icon:"🧾" }, Insurance:{ icon:"🛡️" },
+    Bank:{ icon:"🏦" }, Medical:{ icon:"🏥" }, Government:{ icon:"🏛️" },
   };
-  const drawers = Object.keys(drawerMeta);
-  let activeDrawer = "All";
-  let sortBy = "newest";
-  let searchQuery = "";
-
-  const drawerGrid = document.getElementById('drawerGrid');
-  const cardsView = document.getElementById('cardsView');
-  const emptyState = document.getElementById('emptyState');
-  const deadlineList = document.getElementById('deadlineList');
-  const activeFilterBadge = document.getElementById('activeFilterBadge');
-  const clearFilter = document.getElementById('clearFilter');
-  const sortSelect = document.getElementById('sortSelect');
-  const searchInput = document.getElementById('searchInput');
-
-  // Render drawers
-  function renderDrawers() {
-    drawerGrid.innerHTML = '';
-    drawers.forEach(name => {
-      const count = name === 'All' ? mailItems.length : mailItems.filter(m => m.category === name).length;
-      const isActive = activeDrawer === name;
-      const btn = document.createElement('button');
-      btn.className = `group relative text-left rounded-2xl border p-3.5 transition w-full ${isActive ? 'bg-[#5a4a2a] border-[#5a4a2a] text-[#f6ecd2] shadow-md' : 'bg-[#fcf7e8] border-[#5a4a2a]/10 hover:bg-white text-[#5a4a2a]'}`;
-      btn.innerHTML = `
-        <div class="flex items-center justify-between">
-          <span class="text-[14px] font-medium flex items-center gap-1.5"><span>${drawerMeta[name].icon}</span>${name}</span>
-          <span class="text-[11px] px-2 py-0.5 rounded-full ${isActive ? 'bg-white/15 text-[#f6ecd2]' : 'bg-white border border-[#5a4a2a]/10 text-stone-600'}">${count}</span>
-        </div>
-        <p class="text-[11px] mt-1 ${isActive ? 'text-[#f6ecd2]/80' : 'text-stone-500'}">${drawerMeta[name].desc}</p>
-      `;
-      btn.onclick = () => { activeDrawer = name; updateFilterUI(); renderAll(); };
-      drawerGrid.appendChild(btn);
-    });
-  }
-
-  function updateFilterUI() {
-    if (activeDrawer === 'All') {
-      activeFilterBadge.classList.add('hidden');
-      clearFilter.classList.add('hidden');
-    } else {
-      activeFilterBadge.textContent = activeDrawer;
-      activeFilterBadge.classList.remove('hidden');
-      clearFilter.classList.remove('hidden');
-    }
-  }
-  clearFilter.onclick = () => { activeDrawer = 'All'; updateFilterUI(); renderAll(); };
-
-  // Urgency helpers
   const urgencyMap = {
-    high: { label: 'High', cls: 'bg-red-50 text-red-700 ring-red-200', dot: 'bg-red-500' },
-    medium: { label: 'Medium', cls: 'bg-orange-50 text-orange-700 ring-orange-200', dot: 'bg-orange-500' },
-    low: { label: 'Low', cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200', dot: 'bg-emerald-500' },
-  };
-  const fmtDate = (iso) => iso ? new Date(iso+'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '';
-  const daysUntil = (iso) => {
-    if(!iso) return null;
-    const d = new Date(iso+'T12:00:00');
-    return Math.ceil((d-NOW)/(1000*60*60*24));
-  };
-  const parseAmount = (str) => {
-    if(!str) return 0;
-    const val = parseFloat(str.replace(/[^0-9.]/g, ''));
-    return isNaN(val) ? 0 : val;
+    high:{ label:"High" }, medium:{ label:"Medium" }, low:{ label:"Low" },
   };
 
-  function renderInsights() {
-    const withDeadline = mailItems.filter(m => m.deadline).sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
-    const totalUpcoming = withDeadline.reduce((sum, m) => sum + parseAmount(m.amount), 0);
-    const highCount = mailItems.filter(m => m.urgency === 'high').length;
+  let activeDrawer = "All";
+  let searchQuery = "";
+  let openSwipeRow = null;
 
-    document.getElementById('statTotalDue').textContent = `$${totalUpcoming.toFixed(2)}`;
-    document.getElementById('statHighCount').textContent = highCount;
-    document.getElementById('statTotalItems').textContent = mailItems.length;
+  const fmtShort = (iso) => iso ? new Date(iso+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+  const daysUntil = (iso) => iso ? Math.ceil((new Date(iso+'T12:00:00')-NOW)/86400000) : null;
+  const parseAmount = (s) => { if(!s) return 0; const v=parseFloat(s.replace(/[^0-9.]/g,'')); return isNaN(v)?0:v; };
 
-    const next = withDeadline[0];
-    const statNext = document.getElementById('statNext');
-    const statNextLabel = document.getElementById('statNextLabel');
-    if (next) {
-      const d = daysUntil(next.deadline);
-      statNext.textContent = d >= 0 ? `${d}d` : 'Overdue';
-      statNextLabel.textContent = `${next.sender} — ${next.title}`;
-    } else {
-      statNext.textContent = '—';
-      statNextLabel.textContent = 'Nothing due yet';
-    }
+  // ---------- Tasks store ----------
+  function loadTasks(){
+    try{ return JSON.parse(localStorage.getItem(TASKS_KEY)) || []; } catch(e){ return []; }
+  }
+  function saveTasks(){ localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)); }
+  let tasks = loadTasks();
+
+  function addTask(title, due, source){
+    tasks.unshift({ id:Date.now()+Math.random(), title, due:due||null, source:source||null, done:false });
+    saveTasks(); renderTasks();
   }
 
-  function renderDeadlines() {
-    const withDeadlines = mailItems.filter(m=>m.deadline).sort((a,b)=> new Date(a.deadline)-new Date(b.deadline)).slice(0,3);
-    deadlineList.innerHTML = '';
-    withDeadlines.forEach(m => {
-      const u = urgencyMap[m.urgency];
-      const days = daysUntil(m.deadline);
-      const li = document.createElement('li');
-      li.className = 'group flex items-center gap-3 p-3 rounded-2xl border border-[#5a4a2a]/10 hover:bg-[#fcf7e8] cursor-pointer transition';
-      li.innerHTML = `
-        <span class="w-2.5 h-2.5 rounded-full ${u.dot} shrink-0"></span>
-        <div class="min-w-0 flex-1">
-          <p class="text-sm font-medium text-[#5a4a2a] truncate">${m.sender} — ${m.title}</p>
-          <p class="text-xs text-stone-600">Due ${fmtDate(m.deadline)} • ${days>=0? `${days} days` : 'Overdue'}</p>
-        </div>
-        <span class="text-[11px] px-2 py-1 rounded-full ring-1 ${u.cls}">${u.label}</span>
-      `;
-      li.onclick = () => document.querySelector(`[data-card="${m.id}"]`)?.scrollIntoView({behavior:'smooth', block:'center'});
-      deadlineList.appendChild(li);
+  // ---------- Toast ----------
+  const toastEl = document.getElementById('toast');
+  let toastTimer;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 2200);
+  }
+
+  // ---------- Tabs ----------
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const panels = { inbox: document.getElementById('panel-inbox'), tasks: document.getElementById('panel-tasks'), account: document.getElementById('panel-account') };
+  tabButtons.forEach(btn => btn.addEventListener('click', () => {
+    tabButtons.forEach(b => b.classList.toggle('active', b===btn));
+    Object.entries(panels).forEach(([name, el]) => el.hidden = name !== btn.dataset.tab);
+  }));
+
+  // ---------- Scroll -> collapsing large title ----------
+  document.querySelectorAll('[data-scroll]').forEach(area => {
+    const panel = area.closest('.panel');
+    area.addEventListener('scroll', () => {
+      panel.classList.toggle('scrolled', area.scrollTop > 18);
+    }, { passive:true });
+  });
+
+  // ---------- Sheets ----------
+  function openSheet(scrim, sheet){
+    scrim.hidden = false; sheet.hidden = false;
+    requestAnimationFrame(()=>{ scrim.classList.add('show'); sheet.classList.add('show'); });
+  }
+  function closeSheet(scrim, sheet){
+    scrim.classList.remove('show'); sheet.classList.remove('show');
+    setTimeout(()=>{ scrim.hidden = true; sheet.hidden = true; }, 320);
+  }
+  function wireSheetDismiss(scrim, sheet, handle){
+    scrim.addEventListener('click', () => closeSheet(scrim, sheet));
+    let startY=0, dy=0, dragging=false;
+    handle.addEventListener('pointerdown', e => { dragging=true; startY=e.clientY; sheet.style.transition='none'; handle.setPointerCapture(e.pointerId); });
+    handle.addEventListener('pointermove', e => {
+      if(!dragging) return;
+      dy = Math.max(0, e.clientY-startY);
+      sheet.style.transform = `translateY(${dy}px)`;
     });
+    function end(){
+      if(!dragging) return;
+      dragging=false;
+      sheet.style.transition='';
+      sheet.style.transform='';
+      if(dy > 90) closeSheet(scrim, sheet);
+      dy = 0;
+    }
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
   }
 
-  function sortItems(items) {
-    const arr = [...items];
-    if (sortBy === 'newest') return arr.sort((a,b)=> new Date(b.date)-new Date(a.date));
-    if (sortBy === 'urgency') {
-      const order = {high:0, medium:1, low:2};
-      return arr.sort((a,b)=> order[a.urgency]-order[b.urgency]);
-    }
-    if (sortBy === 'deadline') {
-      return arr.sort((a,b)=> {
-        if(!a.deadline && !b.deadline) return 0;
-        if(!a.deadline) return 1;
-        if(!b.deadline) return -1;
-        return new Date(a.deadline)-new Date(b.deadline);
+  const detailScrim = document.getElementById('detailScrim');
+  const detailSheet = document.getElementById('detailSheet');
+  const detailBody = document.getElementById('detailBody');
+  wireSheetDismiss(detailScrim, detailSheet, document.getElementById('detailHandle'));
+
+  const taskScrim = document.getElementById('taskScrim');
+  const taskSheet = document.getElementById('taskSheet');
+  wireSheetDismiss(taskScrim, taskSheet, document.getElementById('taskHandle'));
+
+  function openDetail(m){
+    const u = urgencyMap[m.urgency];
+    const actions = [];
+    actions.push(`<a class="big-action primary" href="tel:${m.phone}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2Z"/></svg>Call</a>`);
+    if(m.email) actions.push(`<a class="big-action" href="mailto:${m.email}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5C4 5.67 4.67 5 5.5 5h13c.83 0 1.5.67 1.5 1.5v11c0 .83-.67 1.5-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11Z"/><path d="M4 7l8 5.5L20 7"/></svg>Email</a>`);
+    actions.push(`<button class="big-action" id="detailAddTask"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Add Task</button>`);
+
+    detailBody.innerHTML = `
+      <div class="detail-header">
+        <div class="detail-icon">${m.icon}</div>
+        <div>
+          <div class="detail-sender">${m.sender}</div>
+          <div class="detail-title">${m.title}</div>
+        </div>
+      </div>
+      <div class="detail-badges">
+        <span class="badge ${m.urgency}">${u.label} urgency</span>
+        <span class="badge">${m.category}</span>
+        ${m.deadline ? `<span class="badge">Due ${fmtShort(m.deadline)}</span>` : ''}
+      </div>
+      <p class="detail-text">${m.details}</p>
+      <div class="action-grid ${actions.length===2?'cols-2':''}">${actions.join('')}</div>
+    `;
+    const addBtn = document.getElementById('detailAddTask');
+    if(addBtn){
+      addBtn.addEventListener('click', () => {
+        let due = null;
+        if(m.deadline){ const d = new Date(m.deadline+'T12:00:00'); d.setDate(d.getDate()-1); due = d.toISOString().slice(0,10); }
+        addTask(`${m.sender} — ${m.title}`, due, m.sender);
+        showToast('Task added');
+        closeSheet(detailScrim, detailSheet);
       });
     }
-    return arr;
+    openSheet(detailScrim, detailSheet);
   }
 
-  function renderCards() {
-    let filtered = activeDrawer==='All' ? mailItems : mailItems.filter(m=>m.category===activeDrawer);
-    if (searchQuery) {
+  document.getElementById('addTaskBtn').addEventListener('click', () => {
+    document.getElementById('taskTitleInput').value = '';
+    document.getElementById('taskDateInput').value = '';
+    openSheet(taskScrim, taskSheet);
+    setTimeout(()=> document.getElementById('taskTitleInput').focus(), 320);
+  });
+  document.getElementById('taskSaveBtn').addEventListener('click', () => {
+    const title = document.getElementById('taskTitleInput').value.trim();
+    if(!title) return;
+    const due = document.getElementById('taskDateInput').value || null;
+    addTask(title, due, null);
+    closeSheet(taskScrim, taskSheet);
+    showToast('Task added');
+  });
+
+  // ---------- Swipe gesture (shared) ----------
+  function attachSwipe(row, onTap){
+    const content = row.querySelector('.row-content');
+    // width is passed via data attribute rather than measured, since rows are often built while
+    // their tab panel is display:none (offsetWidth would read 0 for anything measured then)
+    const actionsWidth = Number(row.dataset.actionsWidth);
+    let startX=0, startY=0, decided=false, horizontal=false, dragging=false, baseX=0, currentX=0;
+
+    row.addEventListener('pointerdown', e => {
+      // skip pointer capture for controls that need their own untouched click (checkboxes, etc.) —
+      // setPointerCapture retargets the trailing click to `row`, which would swallow their listeners
+      if(e.target.closest('.row-actions') || e.target.closest('[data-no-drag]')) return;
+      dragging=true; decided=false; horizontal=false;
+      startX=e.clientX; startY=e.clientY;
+      baseX = row.classList.contains('swiped') ? -actionsWidth : 0;
+      content.style.transition='none';
+      row.setPointerCapture(e.pointerId);
+    });
+    row.addEventListener('pointermove', e => {
+      if(!dragging) return;
+      const dx=e.clientX-startX, dy=e.clientY-startY;
+      if(!decided){
+        if(Math.abs(dx)<8 && Math.abs(dy)<8) return;
+        decided=true; horizontal = Math.abs(dx)>Math.abs(dy);
+        if(horizontal && openSwipeRow && openSwipeRow!==row) closeSwipe(openSwipeRow);
+      }
+      if(!horizontal) return;
+      currentX = Math.min(0, Math.max(-actionsWidth-24, baseX+dx));
+      content.style.transform = `translateX(${currentX}px)`;
+    });
+    function finish(){
+      if(!dragging) return;
+      dragging=false;
+      if(!horizontal) return;
+      content.style.transition='';
+      if(currentX < -actionsWidth/2){
+        content.style.transform=`translateX(${-actionsWidth}px)`;
+        row.classList.add('swiped');
+        openSwipeRow = row;
+      } else {
+        content.style.transform='translateX(0)';
+        row.classList.remove('swiped');
+        if(openSwipeRow===row) openSwipeRow=null;
+      }
+    }
+    row.addEventListener('pointerup', finish);
+    row.addEventListener('pointercancel', finish);
+    // click is retargeted to `row` once setPointerCapture fires, so it must be bound here rather than on `content`
+    row.addEventListener('click', e => {
+      if(e.target.closest('.row-actions')) return;
+      // a completed drag already resolved open/closed state in finish() — don't let the trailing click undo it
+      if(decided && horizontal) return;
+      if(row.classList.contains('swiped')){ closeSwipe(row); return; }
+      onTap(e);
+    });
+  }
+  function closeSwipe(row){
+    const content = row.querySelector('.row-content');
+    content.style.transform='translateX(0)';
+    row.classList.remove('swiped');
+    if(openSwipeRow===row) openSwipeRow=null;
+  }
+
+  // ---------- Render: chips ----------
+  const chipRow = document.getElementById('chipRow');
+  function renderChips(){
+    chipRow.innerHTML = Object.keys(drawerMeta).map(name => {
+      const count = name==='All' ? mailItems.length : mailItems.filter(m=>m.category===name).length;
+      return `<button class="chip ${activeDrawer===name?'active':''}" data-drawer="${name}">${drawerMeta[name].icon} ${name} <span class="count">${count}</span></button>`;
+    }).join('');
+    chipRow.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+      activeDrawer = c.dataset.drawer; renderChips(); renderMailList();
+    }));
+  }
+
+  // ---------- Render: insights ----------
+  function renderInsights(){
+    const withDeadline = mailItems.filter(m=>m.deadline).sort((a,b)=> new Date(a.deadline)-new Date(b.deadline));
+    const total = withDeadline.reduce((s,m)=> s+parseAmount(m.amount), 0);
+    const high = mailItems.filter(m=>m.urgency==='high').length;
+    const next = withDeadline[0];
+    const nextDays = next ? daysUntil(next.deadline) : null;
+
+    document.getElementById('insightStrip').innerHTML = `
+      <div class="insight-card">
+        <div class="label">Upcoming</div>
+        <div class="value">$${total.toFixed(2)}</div>
+        <div class="sub">All open deadlines</div>
+      </div>
+      <div class="insight-card ${next && nextDays<0 ? 'alert':''}">
+        <div class="label">Next Due</div>
+        <div class="value">${next ? (nextDays>=0?`${nextDays}d`:'Overdue') : '—'}</div>
+        <div class="sub">${next ? next.sender : 'Nothing due'}</div>
+      </div>
+      <div class="insight-card ${high>0?'alert':''}">
+        <div class="label">Needs You</div>
+        <div class="value">${high}</div>
+        <div class="sub">High urgency</div>
+      </div>
+    `;
+  }
+
+  // ---------- Render: mail list ----------
+  const mailListEl = document.getElementById('mailList');
+  const mailEmptyEl = document.getElementById('mailEmpty');
+  function renderMailList(){
+    let items = activeDrawer==='All' ? mailItems : mailItems.filter(m=>m.category===activeDrawer);
+    if(searchQuery){
       const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(m =>
-        m.sender.toLowerCase().includes(q) ||
-        m.title.toLowerCase().includes(q) ||
-        m.summary.toLowerCase().includes(q)
-      );
+      items = items.filter(m => m.sender.toLowerCase().includes(q) || m.title.toLowerCase().includes(q) || m.summary.toLowerCase().includes(q));
     }
-    const items = sortItems(filtered);
-    cardsView.innerHTML = '';
+    items = [...items].sort((a,b)=> new Date(b.date)-new Date(a.date));
 
-    if (items.length === 0) {
-      emptyState.classList.remove('hidden');
-      return;
-    }
-    emptyState.classList.add('hidden');
+    if(items.length===0){ mailListEl.innerHTML=''; mailEmptyEl.hidden=false; return; }
+    mailEmptyEl.hidden = true;
 
-    items.forEach(m => {
+    mailListEl.innerHTML = items.map(m => {
       const u = urgencyMap[m.urgency];
-      const card = document.createElement('article');
-      card.dataset.card = m.id;
-      card.className = 'card fade-in bg-white rounded-[28px] border border-[#5a4a2a]/10 shadow-[0_6px_24px_rgba(90,74,42,0.06)] p-5 cursor-pointer';
-      card.innerHTML = `
-        <div class="flex items-start gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-[#fcf7e8] border border-[#5a4a2a]/10 flex items-center justify-center text-xl shrink-0">${m.icon}</div>
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2 flex-wrap">
-              <h4 class="font-semibold text-[#5a4a2a] leading-tight">${m.sender}</h4>
-              <span class="text-[11px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 border">${m.category}</span>
-            </div>
-            <p class="text-[13px] text-stone-600 -mt-0.5">${m.title}</p>
-          </div>
-          <span class="text-[11px] px-2 py-1 rounded-full ring-1 ${u.cls} whitespace-nowrap">${u.label}</span>
-        </div>
+      const acts = [`<a class="row-action action-call" href="tel:${m.phone}" onclick="event.stopPropagation()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2Z"/></svg><span>Call</span></a>`];
+      if(m.email) acts.push(`<a class="row-action action-email" href="mailto:${m.email}" onclick="event.stopPropagation()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5C4 5.67 4.67 5 5.5 5h13c.83 0 1.5.67 1.5 1.5v11c0 .83-.67 1.5-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11Z"/><path d="M4 7l8 5.5L20 7"/></svg><span>Email</span></a>`);
+      acts.push(`<button class="row-action action-task" data-task-for="${m.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span>Task</span></button>`);
 
-        <p class="mt-3 text-[14px] leading-snug text-stone-700">${m.summary}</p>
-
-        <div class="mt-3 flex items-center gap-3 text-xs text-stone-600 flex-wrap">
-          <span class="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>${m.received}</span>
-          ${m.deadline ? `<span class="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Due ${fmtDate(m.deadline)}</span>` : `<span class="flex items-center gap-1.5 opacity-70">No deadline</span>`}
-          ${m.amount ? `<span class="font-medium text-[#5a4a2a] tabular">${m.amount}</span>`:''}
-        </div>
-
-        <div class="mt-3 flex items-center justify-between">
-          <div class="flex items-center gap-1.5 text-[12px] text-stone-600">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span>${m.isNewThread ? 'New thread' : `Thread • ${m.threadCount} items`}</span>
-            <span class="opacity-50">•</span>
-            <span class="truncate max-w-[120px]">${m.thread}</span>
-          </div>
-          <span class="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200" title="OCR extraction confidence">✨ ${m.confidence}%</span>
-        </div>
-
-        <div class="mt-3 flex justify-end">
-          <button class="text-xs font-medium text-[#5a4a2a] hover:underline">Expand</button>
-        </div>
-
-        <div class="expand mt-0">
-          <div class="expand-inner">
-            <div class="pt-4 mt-4 border-t border-[#5a4a2a]/10">
-              <p class="text-[13px] text-stone-700">${m.details}</p>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <button data-task="${m.id}" class="px-3 py-2 rounded-xl bg-[#5a4a2a] text-[#f6ecd2] text-xs font-medium hover:bg-[#483b21] transition">Create Task</button>
-                <button class="px-3 py-2 rounded-xl bg-white border border-[#5a4a2a]/15 text-xs font-medium text-[#5a4a2a] hover:bg-[#fcf7e8] transition">View Original</button>
-                <button class="px-3 py-2 rounded-xl bg-white border border-[#5a4a2a]/15 text-xs font-medium text-[#5a4a2a] hover:bg-[#fcf7e8] transition">Add to Calendar</button>
+      return `
+      <li class="swipe-row mail-row" data-id="${m.id}" data-actions-width="${acts.length*76}">
+        <div class="row-actions">${acts.join('')}</div>
+        <div class="row-content">
+          <div class="mail-row-content">
+            <div class="mail-icon">${m.icon}</div>
+            <div class="mail-main">
+              <div class="mail-top"><span class="mail-sender">${m.sender}</span><span class="mail-time">${m.received}</span></div>
+              <div class="mail-title-line">${m.title}</div>
+              <div class="mail-summary">${m.summary}</div>
+              <div class="mail-meta">
+                ${m.deadline ? `<span class="meta-chip ${m.urgency}">Due ${fmtShort(m.deadline)}</span>` : ''}
+                ${m.amount ? `<span class="meta-amount">${m.amount}</span>` : ''}
               </div>
             </div>
           </div>
         </div>
-      `;
-      // expand toggle
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('button')) return;
-        const exp = card.querySelector('.expand');
-        exp.classList.toggle('open');
+      </li>`;
+    }).join('');
+
+    mailListEl.querySelectorAll('.mail-row').forEach(row => {
+      const id = Number(row.dataset.id);
+      const m = mailItems.find(x=>x.id===id);
+      attachSwipe(row, () => openDetail(m));
+      const taskBtn = row.querySelector('[data-task-for]');
+      if(taskBtn) taskBtn.addEventListener('click', () => {
+        let due=null;
+        if(m.deadline){ const d=new Date(m.deadline+'T12:00:00'); d.setDate(d.getDate()-1); due=d.toISOString().slice(0,10); }
+        addTask(`${m.sender} — ${m.title}`, due, m.sender);
+        closeSwipe(row);
+        showToast('Task added');
       });
-      // create task
-      card.querySelector(`[data-task="${m.id}"]`)?.addEventListener('click', (e) => {
+    });
+  }
+
+  // ---------- Render: tasks ----------
+  const taskListEl = document.getElementById('taskList');
+  const taskEmptyEl = document.getElementById('taskEmpty');
+  function renderTasks(){
+    if(tasks.length===0){ taskListEl.innerHTML=''; taskEmptyEl.hidden=false; return; }
+    taskEmptyEl.hidden = true;
+    const sorted = [...tasks].sort((a,b) => {
+      if(a.done !== b.done) return a.done ? 1 : -1;
+      if(!a.due && !b.due) return 0;
+      if(!a.due) return 1;
+      if(!b.due) return -1;
+      return new Date(a.due)-new Date(b.due);
+    });
+    taskListEl.innerHTML = sorted.map(t => `
+      <li class="swipe-row task-row ${t.done?'done':''}" data-id="${t.id}" data-actions-width="84">
+        <div class="row-actions"><button class="row-action action-delete" data-delete="${t.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7"/></svg><span>Delete</span></button></div>
+        <div class="row-content">
+          <div class="task-row-content">
+            <button class="task-check" data-toggle="${t.id}" data-no-drag>
+              ${t.done
+                ? `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="m8.5 12 2.3 2.3L15.5 9.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+                : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.5"/></svg>`}
+            </button>
+            <div>
+              <div class="task-title">${t.title}</div>
+              <div class="task-sub">${t.source ? t.source+' · ' : ''}${t.due ? 'Due '+fmtShort(t.due) : 'No due date'}</div>
+            </div>
+          </div>
+        </div>
+      </li>
+    `).join('');
+
+    taskListEl.querySelectorAll('.task-row').forEach(row => {
+      attachSwipe(row, () => {});
+      row.querySelector('[data-toggle]').addEventListener('click', e => {
         e.stopPropagation();
-        const when = m.deadline ? new Date(m.deadline) : new Date();
-        when.setDate(when.getDate()-1);
-        showToast(`Task created: ${m.sender} — reminder ${when.toLocaleDateString('en-US',{month:'short', day:'numeric'})} 9:00 AM`);
+        const id = row.dataset.id;
+        const t = tasks.find(x => String(x.id)===id);
+        t.done = !t.done; saveTasks(); renderTasks();
       });
-      cardsView.appendChild(card);
+      const del = row.querySelector('[data-delete]');
+      if(del) del.addEventListener('click', () => {
+        tasks = tasks.filter(x => String(x.id) !== row.dataset.id);
+        saveTasks(); renderTasks();
+      });
     });
   }
 
-  function renderAll() {
-    renderInsights();
-    renderDrawers();
-    renderDeadlines();
-    renderCards();
-  }
+  // ---------- Search ----------
+  const searchField = document.getElementById('searchField');
+  const searchInput = document.getElementById('searchInput');
+  searchInput.addEventListener('input', e => {
+    searchQuery = e.target.value;
+    searchField.classList.toggle('has-text', searchQuery.length>0);
+    renderMailList();
+  });
+  document.getElementById('searchClear').addEventListener('click', () => {
+    searchInput.value=''; searchQuery=''; searchField.classList.remove('has-text'); renderMailList();
+  });
 
-  // View toggle
-  const btnCards = document.getElementById('btnCards');
-  const btnTimeline = document.getElementById('btnTimeline');
-  const cardsViewWrap = document.getElementById('cardsView');
-  const timelineView = document.getElementById('timelineView');
-
-  btnCards.onclick = () => {
-    btnCards.className = "px-3.5 py-1.5 text-sm font-medium rounded-xl bg-[#5a4a2a] text-[#f6ecd2]";
-    btnTimeline.className = "px-3.5 py-1.5 text-sm font-medium rounded-xl text-[#5a4a2a]/70 hover:text-[#5a4a2a]";
-    cardsViewWrap.classList.remove('hidden');
-    emptyState.classList.toggle('hidden', cardsViewWrap.children.length > 0);
-    timelineView.classList.add('hidden');
-  };
-  btnTimeline.onclick = () => {
-    btnTimeline.className = "px-3.5 py-1.5 text-sm font-medium rounded-xl bg-[#5a4a2a] text-[#f6ecd2]";
-    btnCards.className = "px-3.5 py-1.5 text-sm font-medium rounded-xl text-[#5a4a2a]/70 hover:text-[#5a4a2a]";
-    cardsViewWrap.classList.add('hidden');
-    emptyState.classList.add('hidden');
-    timelineView.classList.remove('hidden');
-  };
-
-  sortSelect.onchange = (e) => { sortBy = e.target.value; renderCards(); };
-  searchInput.oninput = (e) => { searchQuery = e.target.value; renderCards(); };
-
-  // Upload simulation (click or drag-and-drop)
-  const uploadBtn = document.getElementById('uploadBtn');
+  // ---------- Scan / upload ----------
   const fileInput = document.getElementById('fileInput');
-  const dropZone = document.getElementById('dropZone');
-
-  function simulateUpload() {
-    showToast('Scanning mail... OCR complete');
+  document.getElementById('scanFab').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    if(!fileInput.files.length) return;
+    showToast('Scanning mail…');
     setTimeout(() => {
-      const newMail = {
-        id: Date.now(),
-        sender: "City of Berkeley",
-        title: "Water & Trash Bill",
-        category: "Bills",
-        date: "2026-07-29",
-        received: "Just now",
-        summary: "New bill detected from photo. Amount $84.20. Due Aug 22.",
-        amount: "$84.20",
-        deadline: "2026-08-22",
-        urgency: "medium",
-        thread: "Berkeley Utilities",
-        threadCount: 1,
-        isNewThread: true,
-        confidence: 96,
-        icon: "💧",
-        details: "Auto-categorized as Bills. Extracted account # from image. Added to thread detection."
-      };
-      mailItems.unshift(newMail);
-      showToast('Added to Bills • Deadline Aug 22 • Thread created');
-      renderAll();
-      document.querySelector(`[data-card="${newMail.id}"]`)?.scrollIntoView({behavior:'smooth'});
-    }, 1200);
-  }
-
-  uploadBtn.onclick = () => fileInput.click();
-  fileInput.onchange = () => { if (fileInput.files.length) simulateUpload(); };
-
-  ['dragenter','dragover'].forEach(evt => dropZone.addEventListener(evt, e => {
-    e.preventDefault();
-    dropZone.classList.add('drop-active');
-  }));
-  ['dragleave','drop'].forEach(evt => dropZone.addEventListener(evt, e => {
-    e.preventDefault();
-    dropZone.classList.remove('drop-active');
-  }));
-  dropZone.addEventListener('drop', e => {
-    if (e.dataTransfer.files.length) simulateUpload();
+      mailItems.unshift({
+        id:Date.now(), sender:"City of Berkeley", title:"Water & Trash Bill", category:"Bills",
+        date:"2026-07-29", received:"Just now",
+        summary:"New bill detected from photo. Amount $84.20. Due Aug 22.",
+        amount:"$84.20", deadline:"2026-08-22", urgency:"medium",
+        thread:"Berkeley Utilities", threadCount:1, isNewThread:true, confidence:96, icon:"💧",
+        phone:"+15106441000", email:"utilities@cityofberkeley.example",
+        details:"Auto-categorized as Bills. Extracted account number from image. Added to thread detection."
+      });
+      renderChips(); renderInsights(); renderMailList();
+      showToast('Added to Bills · Due Aug 22');
+    }, 1100);
   });
 
-  // Timeline create task
-  document.querySelector('[data-create="1"]')?.addEventListener('click', () => {
-    showToast('Task created: Pay PG&E by Aug 14 • Reminder set for 9:00 AM');
-  });
+  // ---------- Account ----------
+  document.getElementById('notifSwitch').addEventListener('click', function(){ this.classList.toggle('on'); });
 
-  // Toast
-  const toast = document.getElementById('toast');
-  const toastText = document.getElementById('toastText');
-  let toastTimer;
-  function showToast(msg) {
-    toastText.textContent = msg;
-    toast.classList.remove('hidden');
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(8px)';
-    requestAnimationFrame(()=>{
-      toast.style.transition = 'all .25s ease';
-      toast.style.opacity = '1';
-      toast.style.transform = 'translateY(0)';
-    });
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=>{
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(8px)';
-      setTimeout(()=> toast.classList.add('hidden'), 200);
-    }, 2600);
-  }
-
-  renderAll();
-});
+  renderChips();
+  renderInsights();
+  renderMailList();
+  renderTasks();
+})();
 </script>
 </body>
 </html>
