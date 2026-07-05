@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#F2F1EC" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+<title>MailSort</title>
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg:#F2F1EC;
+    --bg-elevated:#FFFFFF;
+    --bg-grouped:#FFFFFF;
+    --bg-translucent:rgba(242,241,236,0.82);
+    --fill:#EDEBE3;
+    --fill-strong:#E4E1D6;
+    --label:#1C1B18;
+    --label-secondary:rgba(28,27,24,0.55);
+    --label-tertiary:rgba(28,27,24,0.34);
+    --separator:rgba(28,27,24,0.09);
+    --accent:#B3541E;
+    --accent-strong:#8F3F14;
+    --accent-tint:rgba(179,84,30,0.12);
+    --red:#D8402B;
+    --red-tint:rgba(216,64,43,0.12);
+    --orange:#C8791C;
+    --orange-tint:rgba(200,121,28,0.14);
+    --green:#3E8A4F;
+    --green-tint:rgba(62,138,79,0.13);
+    --blue:#2C6FB0;
+    --blue-tint:rgba(44,111,176,0.12);
+    --shadow-card:0 1px 2px rgba(28,27,24,0.04), 0 8px 24px rgba(28,27,24,0.06);
+    --radius-lg:22px;
+    --radius-md:16px;
+    --radius-sm:11px;
+    --safe-top:max(env(safe-area-inset-top),12px);
+    --safe-bottom:max(env(safe-area-inset-bottom),10px);
+    --tabbar-h:56px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#000000;
+      --bg-elevated:#161615;
+      --bg-grouped:#161615;
+      --bg-translucent:rgba(0,0,0,0.78);
+      --fill:#201F1D;
+      --fill-strong:#2B2A27;
+      --label:#F5F4F1;
+      --label-secondary:rgba(245,244,241,0.58);
+      --label-tertiary:rgba(245,244,241,0.36);
+      --separator:rgba(245,244,241,0.11);
+      --accent:#E08A46;
+      --accent-strong:#F0A468;
+      --accent-tint:rgba(224,138,70,0.16);
+      --red:#F0574B;
+      --red-tint:rgba(240,87,75,0.16);
+      --orange:#E0A23B;
+      --orange-tint:rgba(224,162,59,0.16);
+      --green:#5CB56D;
+      --green-tint:rgba(92,181,109,0.16);
+      --blue:#5B9BD9;
+      --blue-tint:rgba(91,155,217,0.16);
+      --shadow-card:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.4);
+    }
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; overscroll-behavior:none; }
+  body{
+    background:#0d0d0c;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--label);
+    -webkit-tap-highlight-color:transparent;
+    display:flex;
+    justify-content:center;
+  }
+  @media (prefers-color-scheme: dark){ body{ background:#000000; } }
+  button, input, textarea{ font-family:inherit; color:inherit; }
+  button{ background:none; border:none; padding:0; cursor:pointer; }
+  a{ color:inherit; text-decoration:none; }
+  ul{ list-style:none; margin:0; padding:0; }
+  h1,h2,h3,p{ margin:0; }
+
+  .app-shell{
+    position:relative;
+    width:100%;
+    max-width:480px;
+    height:100dvh;
+    background:var(--bg);
+    overflow:hidden;
+    transform:translateZ(0);
+  }
+  @media (min-width:560px) and (min-height:700px){
+    body{ align-items:center; padding:24px 0; }
+    .app-shell{
+      height:min(920px, calc(100dvh - 48px));
+      border-radius:46px;
+      box-shadow:0 30px 80px rgba(0,0,0,0.5), 0 0 0 10px #0a0a09, 0 0 0 11px rgba(255,255,255,0.08);
+    }
+  }
+
+  .panel{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+  }
+  .panel[hidden]{ display:none; }
+
+  .navbar{
+    position:relative;
+    z-index:5;
+    flex:none;
+    padding:calc(var(--safe-top) + 2px) 20px 10px;
+    background:var(--bg);
+    border-bottom:0.5px solid transparent;
+    transition:background-color .2s, border-color .2s, backdrop-filter .2s;
+  }
+  .navbar-row{ display:flex; align-items:center; justify-content:space-between; min-height:30px; }
+  .large-title{ font-size:32px; font-weight:800; letter-spacing:-0.02em; margin-top:2px; transition:opacity .18s ease, transform .18s ease; }
+  .navbar-compact{
+    position:absolute; left:0; right:0; bottom:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px; font-weight:600;
+    opacity:0; transform:translateY(4px);
+    pointer-events:none;
+    transition:opacity .18s ease, transform .18s ease;
+  }
+  .panel.scrolled .navbar{
+    background:var(--bg-translucent);
+    backdrop-filter:blur(20px) saturate(180%);
+    -webkit-backdrop-filter:blur(20px) saturate(180%);
+    border-bottom-color:var(--separator);
+  }
+  .panel.scrolled .large-title{ opacity:0; transform:translateY(-8px); }
+  .panel.scrolled .navbar-compact{ opacity:1; transform:translateY(0); }
+  .nav-action{
+    width:32px; height:32px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--accent);
+  }
+  .nav-action:active{ background:var(--fill); }
+
+  .scroll-area{
+    flex:1; min-height:0; overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:2px 16px calc(var(--tabbar-h) + var(--safe-bottom) + 28px);
+  }
+
+  /* ---- Search field ---- */
+  .search-field{
+    display:flex; align-items:center; gap:8px;
+    background:var(--fill); border-radius:12px;
+    padding:9px 12px; margin:6px 0 14px;
+  }
+  .search-field svg{ flex:none; color:var(--label-tertiary); }
+  .search-field input{
+    flex:1; min-width:0; border:none; background:none; outline:none;
+    font-size:16px; color:var(--label);
+  }
+  .search-field input::placeholder{ color:var(--label-tertiary); }
+  .search-clear{ flex:none; color:var(--label-tertiary); display:none; }
+  .search-field.has-text .search-clear{ display:flex; }
+
+  /* ---- Chip row ---- */
+  .chip-row{ display:flex; gap:8px; overflow-x:auto; padding-bottom:14px; margin:0 -16px; padding-left:16px; padding-right:16px; scrollbar-width:none; }
+  .chip-row::-webkit-scrollbar{ display:none; }
+  .chip{
+    flex:none; display:flex; align-items:center; gap:6px;
+    padding:8px 14px; border-radius:999px;
+    background:var(--fill); font-size:14px; font-weight:600;
+    white-space:nowrap; color:var(--label);
+    transition:background-color .15s, color .15s;
+  }
+  .chip .count{ font-weight:700; opacity:.6; font-size:12.5px; }
+  .chip.active{ background:var(--label); color:var(--bg); }
+  .chip.active .count{ opacity:.7; }
+  .chip:active{ transform:scale(0.96); }
+
+  /* ---- Insight strip ---- */
+  .insight-strip{ display:flex; gap:10px; overflow-x:auto; margin:0 -16px 20px; padding:0 16px 2px; scroll-snap-type:x mandatory; scrollbar-width:none; }
+  .insight-strip::-webkit-scrollbar{ display:none; }
+  .insight-card{
+    flex:none; width:132px; scroll-snap-align:start;
+    background:var(--bg-elevated); border-radius:var(--radius-md);
+    padding:12px 14px; box-shadow:var(--shadow-card);
+  }
+  .insight-card .label{ font-size:11.5px; font-weight:600; color:var(--label-secondary); text-transform:uppercase; letter-spacing:0.02em; }
+  .insight-card .value{ font-size:20px; font-weight:800; margin-top:6px; font-variant-numeric:tabular-nums; letter-spacing:-0.01em; }
+  .insight-card .sub{ font-size:11.5px; color:var(--label-tertiary); margin-top:2px; }
+  .insight-card.alert .value{ color:var(--red); }
+
+  .section-label{ font-size:13px; font-weight:700; color:var(--label-secondary); text-transform:uppercase; letter-spacing:0.03em; margin:0 2px 8px; }
+
+  /* ---- Swipeable row shell (shared: mail + tasks) ---- */
+  .swipe-row{ position:relative; border-radius:var(--radius-md); overflow:hidden; margin-bottom:10px; background:var(--bg-elevated); box-shadow:var(--shadow-card); }
+  .row-actions{ position:absolute; top:0; right:0; bottom:0; display:flex; }
+  .row-action{
+    width:76px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    color:#fff; font-size:11px; font-weight:600;
+  }
+  .row-action.action-call{ background:var(--green); }
+  .row-action.action-email{ background:var(--blue); }
+  .row-action.action-task{ background:var(--accent); }
+  .row-action.action-delete{ background:var(--red); width:84px; }
+  .row-content{ position:relative; background:var(--bg-elevated); touch-action:pan-y; will-change:transform; }
+
+  /* ---- Mail row ---- */
+  .mail-row-content{ display:flex; gap:12px; padding:13px 14px; align-items:flex-start; }
+  .mail-icon{
+    flex:none; width:38px; height:38px; border-radius:11px;
+    background:var(--fill); display:flex; align-items:center; justify-content:center;
+    font-size:19px;
+  }
+  .mail-main{ min-width:0; flex:1; }
+  .mail-top{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .mail-sender{ font-size:15.5px; font-weight:700; letter-spacing:-0.01em; }
+  .mail-time{ flex:none; font-size:12px; color:var(--label-tertiary); }
+  .mail-title-line{ font-size:13.5px; color:var(--label-secondary); font-weight:600; margin-top:1px; }
+  .mail-summary{ font-size:13.5px; color:var(--label-secondary); margin-top:3px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .mail-meta{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .meta-chip{ font-size:11.5px; font-weight:700; padding:3px 8px; border-radius:7px; }
+  .meta-chip.high{ background:var(--red-tint); color:var(--red); }
+  .meta-chip.medium{ background:var(--orange-tint); color:var(--orange); }
+  .meta-chip.low{ background:var(--green-tint); color:var(--green); }
+  .meta-amount{ font-size:12.5px; font-weight:700; padding:3px 2px; color:var(--label); font-variant-numeric:tabular-nums; }
+  .unread-dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); flex:none; margin-top:6px; }
+
+  .empty-state{ text-align:center; padding:60px 24px; color:var(--label-secondary); }
+  .empty-state .glyph{ font-size:34px; margin-bottom:10px; }
+  .empty-state .title{ font-size:16px; font-weight:700; color:var(--label); }
+  .empty-state .sub{ font-size:13.5px; margin-top:4px; }
+
+  /* ---- FAB ---- */
+  .fab{
+    position:absolute; right:20px; bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 16px);
+    width:56px; height:56px; border-radius:50%;
+    background:var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 20px rgba(179,84,30,0.4), 0 2px 6px rgba(0,0,0,0.15);
+    transition:transform .12s;
+    z-index:20;
+  }
+  .fab:active{ transform:scale(0.92); }
+
+  /* ---- Tab bar ---- */
+  .tab-bar{
+    position:absolute; left:0; right:0; bottom:0; z-index:30;
+    display:flex;
+    padding-bottom:var(--safe-bottom);
+    background:var(--bg-translucent);
+    backdrop-filter:blur(20px) saturate(180%);
+    -webkit-backdrop-filter:blur(20px) saturate(180%);
+    border-top:0.5px solid var(--separator);
+  }
+  .tab-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    height:var(--tabbar-h);
+    color:var(--label-tertiary);
+  }
+  .tab-btn span{ font-size:10.5px; font-weight:600; }
+  .tab-btn.active{ color:var(--accent); }
+  .tab-btn:active svg{ transform:scale(0.9); }
+
+  /* ---- Sheets ---- */
+  .sheet-scrim{
+    position:absolute; inset:0; background:rgba(0,0,0,0.38);
+    opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:40;
+  }
+  .sheet-scrim.show{ opacity:1; pointer-events:auto; }
+  .sheet{
+    position:absolute; left:0; right:0; bottom:0; z-index:41;
+    max-height:88%; display:flex; flex-direction:column;
+    background:var(--bg-grouped);
+    border-radius:24px 24px 0 0;
+    box-shadow:0 -10px 40px rgba(0,0,0,0.25);
+    transform:translateY(100%);
+    visibility:hidden;
+    /* visibility flips to hidden only once the slide-down finishes, so a closed sheet never
+       leaves a stray sliver visible even if its translateY(100%) basis is off by a few px */
+    transition:transform .32s cubic-bezier(.32,.72,0,1), visibility 0s linear .32s;
+    padding-bottom:var(--safe-bottom);
+  }
+  .sheet.show{
+    transform:translateY(0);
+    visibility:visible;
+    transition:transform .32s cubic-bezier(.32,.72,0,1), visibility 0s linear;
+  }
+  .sheet-handle-row{ display:flex; justify-content:center; padding:8px 0 2px; flex:none; touch-action:none; }
+  .sheet-handle{ width:36px; height:5px; border-radius:3px; background:var(--fill-strong); }
+  .sheet-body{ overflow-y:auto; padding:6px 20px 20px; }
+
+  .detail-header{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .detail-icon{ width:44px; height:44px; border-radius:13px; background:var(--fill); display:flex; align-items:center; justify-content:center; font-size:22px; flex:none; }
+  .detail-sender{ font-size:18px; font-weight:800; letter-spacing:-0.01em; }
+  .detail-title{ font-size:14px; color:var(--label-secondary); font-weight:600; margin-top:1px; }
+  .detail-badges{ display:flex; gap:6px; margin-bottom:14px; }
+  .badge{ font-size:12px; font-weight:700; padding:4px 10px; border-radius:8px; background:var(--fill); }
+  .badge.high{ background:var(--red-tint); color:var(--red); }
+  .badge.medium{ background:var(--orange-tint); color:var(--orange); }
+  .badge.low{ background:var(--green-tint); color:var(--green); }
+  .detail-text{ font-size:14.5px; line-height:1.5; color:var(--label); background:var(--fill); border-radius:var(--radius-md); padding:14px; margin-bottom:16px; }
+  .action-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px; }
+  .action-grid.cols-2{ grid-template-columns:repeat(2,1fr); }
+  .action-grid.cols-1{ grid-template-columns:1fr; }
+
+  .disposal-card{ border-radius:var(--radius-md); padding:14px; margin-bottom:16px; background:var(--fill); border:1px solid transparent; }
+  .disposal-card.toss{ background:var(--green-tint); }
+  .disposal-card.keep{ background:var(--blue-tint); }
+  .disposal-card.keepsake{ background:var(--accent-tint); }
+  .disposal-head{ display:flex; align-items:center; gap:8px; font-size:14.5px; font-weight:700; }
+  .disposal-card.toss .disposal-head{ color:var(--green); }
+  .disposal-card.keep .disposal-head{ color:var(--blue); }
+  .disposal-card.keepsake .disposal-head{ color:var(--accent-strong); }
+  .disposal-reason{ font-size:13px; color:var(--label-secondary); line-height:1.4; margin:6px 0 12px; }
+  .disposal-btn{ width:100%; padding:11px; border-radius:11px; font-size:13.5px; font-weight:700; background:rgba(0,0,0,0.06); color:var(--label); }
+  @media (prefers-color-scheme: dark){ .disposal-btn{ background:rgba(255,255,255,0.1); } }
+  .disposal-btn.done{ background:transparent; color:var(--label-secondary); text-decoration:underline; }
+  .disposal-btn:active{ opacity:0.75; }
+
+  .mail-disposal-tag{ font-size:11.5px; font-weight:700; padding:3px 8px; border-radius:7px; display:inline-flex; align-items:center; gap:4px; }
+  .mail-disposal-tag.toss{ background:var(--green-tint); color:var(--green); }
+  .mail-disposal-tag.keep{ background:var(--blue-tint); color:var(--blue); }
+  .mail-disposal-tag.keepsake{ background:var(--accent-tint); color:var(--accent-strong); }
+  .mail-disposal-tag.done{ background:var(--fill); color:var(--label-tertiary); }
+  .big-action{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    padding:14px 6px; border-radius:var(--radius-md);
+    background:var(--fill); font-size:12.5px; font-weight:700;
+  }
+  .big-action.primary{ background:var(--accent); color:#fff; }
+  .big-action:active{ transform:scale(0.96); }
+
+  .field-label{ font-size:13px; font-weight:700; color:var(--label-secondary); margin:16px 0 6px; text-transform:uppercase; letter-spacing:0.02em; }
+  .text-input, .date-input{
+    width:100%; background:var(--fill); border:none; border-radius:12px;
+    padding:13px 14px; font-size:16px; color:var(--label); outline:none;
+  }
+  .sheet-save{
+    margin-top:20px; width:100%; padding:14px; border-radius:14px;
+    background:var(--accent); color:#fff; font-size:16px; font-weight:700; text-align:center;
+  }
+  .sheet-save:active{ opacity:0.85; }
+  .sheet-title-row{ display:flex; align-items:center; justify-content:space-between; padding:2px 20px 10px; }
+  .sheet-title{ font-size:17px; font-weight:700; }
+
+  /* ---- Task rows ---- */
+  .task-row-content{ display:flex; align-items:flex-start; gap:12px; padding:14px; }
+  .task-check{ flex:none; color:var(--label-tertiary); margin-top:1px; }
+  .task-row.done .task-check{ color:var(--green); }
+  .task-title{ font-size:15px; font-weight:600; }
+  .task-row.done .task-title{ color:var(--label-tertiary); text-decoration:line-through; }
+  .task-sub{ font-size:12.5px; color:var(--label-tertiary); margin-top:2px; }
+
+  /* ---- Account ---- */
+  .profile-card{ display:flex; align-items:center; gap:14px; padding:16px 4px 22px; }
+  .avatar{ width:60px; height:60px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; flex:none; }
+  .profile-name{ font-size:19px; font-weight:800; }
+  .profile-email{ font-size:13.5px; color:var(--label-secondary); margin-top:1px; }
+  .list-group{ background:var(--bg-elevated); border-radius:var(--radius-md); overflow:hidden; box-shadow:var(--shadow-card); margin-bottom:20px; }
+  .list-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 14px; border-bottom:0.5px solid var(--separator); min-height:24px; }
+  .list-row:last-child{ border-bottom:none; }
+  .list-row .row-title{ font-size:15.5px; font-weight:500; }
+  .list-row .row-value{ font-size:14.5px; color:var(--label-tertiary); }
+  .list-row.danger .row-title{ color:var(--red); font-weight:600; }
+  .list-row:active{ background:var(--fill); }
+
+  .switch{ width:46px; height:28px; border-radius:14px; background:var(--fill-strong); position:relative; transition:background-color .2s; flex:none; }
+  .switch::after{ content:''; position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.3); transition:transform .2s; }
+  .switch.on{ background:var(--green); }
+  .switch.on::after{ transform:translateX(18px); }
+
+  .version-footer{ text-align:center; font-size:12px; color:var(--label-tertiary); padding:10px 0 4px; }
+
+  /* ---- Toast ---- */
+  .toast{
+    position:absolute; left:50%; bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 16px); z-index:50;
+    transform:translate(-50%, 16px); opacity:0; pointer-events:none;
+    transition:transform .25s ease, opacity .25s ease;
+    background:var(--label); color:var(--bg);
+    padding:11px 18px; border-radius:14px; font-size:13.5px; font-weight:600;
+    white-space:nowrap; box-shadow:0 8px 24px rgba(0,0,0,0.25);
+    max-width:calc(100% - 40px); overflow:hidden; text-overflow:ellipsis;
+  }
+  .toast.show{ transform:translate(-50%, 0); opacity:1; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition-duration:0.001ms !important; animation-duration:0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell" id="appShell">
+
+  <!-- INBOX -->
+  <section class="panel" id="panel-inbox" data-panel>
+    <header class="navbar" data-navbar>
+      <div class="navbar-row"><h1 class="large-title">Inbox</h1></div>
+      <div class="navbar-compact">Inbox</div>
+    </header>
+    <div class="scroll-area" data-scroll>
+      <div class="search-field" id="searchField">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="searchInput" type="text" placeholder="Search Mail" autocomplete="off" />
+        <button class="search-clear" id="searchClear" aria-label="Clear search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity=".18"/><path d="M8.5 8.5l7 7m0-7l-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <div class="chip-row" id="chipRow"></div>
+      <div class="insight-strip" id="insightStrip"></div>
+
+      <h2 class="section-label">Recent Mail</h2>
+      <ul class="mail-list" id="mailList"></ul>
+      <div class="empty-state" id="mailEmpty" hidden>
+        <div class="glyph">🔍</div>
+        <div class="title">No mail found</div>
+        <div class="sub">Try a different search or filter.</div>
+      </div>
+    </div>
+
+    <button class="fab" id="scanFab" aria-label="Scan mail">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 0 1 2-2h1l1.2-1.6A2 2 0 0 1 9.8 3.6h4.4a2 2 0 0 1 1.6.8L17 6h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    </button>
+    <input id="fileInput" type="file" accept="image/*" capture="environment" hidden />
+  </section>
+
+  <!-- TASKS -->
+  <section class="panel" id="panel-tasks" data-panel hidden>
+    <header class="navbar" data-navbar>
+      <div class="navbar-row">
+        <h1 class="large-title">Tasks</h1>
+        <button class="nav-action" id="addTaskBtn" aria-label="Add task">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <div class="navbar-compact">Tasks</div>
+    </header>
+    <div class="scroll-area" data-scroll>
+      <ul class="mail-list" id="taskList"></ul>
+      <div class="empty-state" id="taskEmpty" hidden>
+        <div class="glyph">✅</div>
+        <div class="title">Nothing on your plate</div>
+        <div class="sub">Tasks you create from mail — or add yourself — show up here.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACCOUNT -->
+  <section class="panel" id="panel-account" data-panel hidden>
+    <header class="navbar" data-navbar>
+      <div class="navbar-row"><h1 class="large-title">Account</h1></div>
+      <div class="navbar-compact">Account</div>
+    </header>
+    <div class="scroll-area" data-scroll>
+      <div class="profile-card">
+        <div class="avatar">JC</div>
+        <div>
+          <div class="profile-name">Jordan Casey</div>
+          <div class="profile-email">jordan@example.com</div>
+        </div>
+      </div>
+
+      <div class="list-group">
+        <div class="list-row">
+          <span class="row-title">Notifications</span>
+          <button class="switch on" id="notifSwitch"></button>
+        </div>
+        <button class="list-row" id="privacyRow">
+          <span class="row-title">Privacy &amp; Data</span>
+          <span class="row-value">On-device</span>
+        </button>
+        <div class="list-row">
+          <span class="row-title">Storage</span>
+          <span class="row-value">6 items</span>
+        </div>
+      </div>
+
+      <div class="list-group">
+        <button class="list-row danger" id="signOutRow">
+          <span class="row-title">Sign Out</span>
+        </button>
+      </div>
+
+      <div class="version-footer">MailSort 1.0 (2026.7)</div>
+    </div>
+  </section>
+
+  <!-- TAB BAR -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="inbox">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5C4 5.67 4.67 5 5.5 5h13c.83 0 1.5.67 1.5 1.5v11c0 .83-.67 1.5-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11Z"/><path d="M4 7l8 5.5L20 7"/></svg>
+      <span>Inbox</span>
+    </button>
+    <button class="tab-btn" data-tab="tasks">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8.5 12 2.3 2.3L15.5 9.5"/></svg>
+      <span>Tasks</span>
+    </button>
+    <button class="tab-btn" data-tab="account">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.4"/><path d="M5 19.2c1.3-3 4-4.7 7-4.7s5.7 1.7 7 4.7"/></svg>
+      <span>Account</span>
+    </button>
+  </nav>
+
+  <!-- DETAIL SHEET -->
+  <div class="sheet-scrim" id="detailScrim" hidden></div>
+  <div class="sheet" id="detailSheet" hidden>
+    <div class="sheet-handle-row" id="detailHandle"><div class="sheet-handle"></div></div>
+    <div class="sheet-body" id="detailBody"></div>
+  </div>
+
+  <!-- ADD TASK SHEET -->
+  <div class="sheet-scrim" id="taskScrim" hidden></div>
+  <div class="sheet" id="taskSheet" hidden>
+    <div class="sheet-handle-row" id="taskHandle"><div class="sheet-handle"></div></div>
+    <div class="sheet-title-row"><span class="sheet-title">New Task</span></div>
+    <div class="sheet-body">
+      <div class="field-label">Title</div>
+      <input class="text-input" id="taskTitleInput" type="text" placeholder="What do you need to do?" />
+      <div class="field-label">Due date</div>
+      <input class="date-input" id="taskDateInput" type="date" />
+      <button class="sheet-save" id="taskSaveBtn">Add Task</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function(){
+  const NOW = new Date('2026-07-29T12:00:00');
+  const TASKS_KEY = 'mailsort:tasks:v1';
+  const DISPOSED_KEY = 'mailsort:disposed:v1';
+
+  const mailItems = [
+    {
+      id:1, sender:"PG&E", title:"Monthly Electric Bill", category:"Bills",
+      date:"2026-07-28", received:"9:42 AM",
+      summary:"Your July electricity bill is ready. Usage up 12% vs last month due to AC.",
+      amount:"$127.43", deadline:"2026-08-15", urgency:"high",
+      thread:"PG&E 2026", threadCount:4, confidence:97, icon:"⚡",
+      phone:"+18007435000", email:"support@pge.com",
+      disposal:"toss", disposalReason:"Routine bill — once it's paid, everything you'd need is saved here. No reason to keep the paper.",
+      details:"Account ending 4821 • Service period Jun 26 – Jul 25 • Auto-pay is OFF. Late fee $5 after due date."
+    },
+    {
+      id:4, sender:"Rancho Mesa HOA", title:"Balcony Inspection Notice", category:"Legal",
+      date:"2026-07-26", received:"2d ago",
+      summary:"Mandatory balcony inspection scheduled. Submit certificate by Jul 20 or $250 fine.",
+      amount:null, deadline:"2026-07-20", urgency:"high",
+      thread:"HOA 2026", threadCount:2, confidence:91, icon:"🏘️",
+      phone:"+19255550142", email:"management@ranchomesahoa.example",
+      disposal:"toss", disposalReason:"Submit your certificate, then this is safe to shred — the deadline and requirements are saved here either way.",
+      details:"Inspection window Aug 1–15. Upload certificate to portal. Previous notice sent Jun 10."
+    },
+    {
+      id:2, sender:"California DMV", title:"Registration Renewal", category:"Legal",
+      date:"2026-07-27", received:"Yesterday",
+      summary:"2021 Toyota Camry registration expires Sep 3. Renew online to avoid late fee.",
+      amount:"$178.00", deadline:"2026-09-03", urgency:"medium",
+      thread:"DMV · Camry", threadCount:1, isNewThread:true, confidence:95, icon:"🚗",
+      phone:"+18007770133", email:null,
+      disposal:"toss", disposalReason:"This is just the renewal reminder — safe to shred once renewed. (Keep the actual registration card/sticker that arrives after.)",
+      details:"License 8ABC123 • Renewal fee $178 • Smog check required. Mail-in option closes Aug 20."
+    },
+    {
+      id:5, sender:"State Farm", title:"Auto Policy Renewal", category:"Bills",
+      date:"2026-07-22", received:"5d ago",
+      summary:"Policy renews Oct 1. No action needed unless changing coverage.",
+      amount:"$642.00", deadline:"2026-10-01", urgency:"medium",
+      thread:"State Farm Auto", threadCount:3, confidence:99, icon:"🛡️",
+      phone:"+18007828332", email:null,
+      disposal:"keep", disposalReason:"Insurance declarations pages are genuinely handy to have on hand — worth keeping this one filed.",
+      details:"Good driver discount applied. Premium billed per 6-month term. Consider bundling home for additional savings."
+    },
+    {
+      id:3, sender:"Kaiser Permanente", title:"Explanation of Benefits", category:"Medical",
+      date:"2026-07-25", received:"3d ago",
+      summary:"EOB for Jun 18 visit. Plan paid $142. You owe $0.",
+      amount:"$0.00", deadline:null, urgency:"low",
+      thread:"Kaiser 2026", threadCount:5, confidence:93, icon:"🏥",
+      phone:"+18004644000", email:null,
+      disposal:"keep", disposalReason:"Medical EOBs are worth keeping for tax records or insurance disputes — this one's saved digitally either way.",
+      details:"Linked to previous Kaiser letter from June 12 regarding referral. No action required — save for records."
+    },
+    {
+      id:6, sender:"Chase Bank", title:"Monthly Statement", category:"Bills",
+      date:"2026-07-24", received:"4d ago",
+      summary:"June statement available. No unusual activity detected.",
+      amount:null, deadline:null, urgency:"low",
+      thread:"Chase Checking", threadCount:12, confidence:99, icon:"🏦",
+      phone:"+18009359935", email:null,
+      disposal:"toss", disposalReason:"Your bank keeps official statements online anytime — this paper copy is safe to shred.",
+      details:"Closing balance $4,218.33 · 47 transactions · 12 receipts auto-categorized."
+    },
+    {
+      id:7, sender:"Aunt Carol", title:"Birthday Card", category:"Personal",
+      date:"2026-07-23", received:"5d ago",
+      summary:"A handwritten card for your birthday, with a $25 gift card tucked inside.",
+      amount:null, deadline:null, urgency:"low",
+      thread:null, threadCount:1, isNewThread:true, confidence:88, icon:"💌",
+      phone:null, email:null,
+      disposal:"keepsake", disposalReason:"A personal note like this is worth keeping if it means something to you — entirely your call, no obligation either way.",
+      details:"\"Thinking of you on your birthday! Call me when you get a chance — love, Aunt Carol.\" Gift card: Target, $25."
+    },
+    {
+      id:8, sender:"Golden State Rewards", title:"You're Pre-Approved!", category:"Junk",
+      date:"2026-07-21", received:"1w ago",
+      summary:"Promotional credit card offer. 0% APR for 15 months. No action needed.",
+      amount:null, deadline:null, urgency:"low",
+      thread:null, threadCount:1, isNewThread:true, confidence:96, icon:"📣",
+      phone:null, email:null,
+      disposal:"toss", disposalReason:"Unsolicited offer with no obligation — shred and recycle anytime. Opt out at optoutprescreen.com.",
+      details:"Marketing mail — pre-approved offer with no personal obligation. Safe to shred and recycle; opt out at optoutprescreen.com."
+    },
+  ];
+
+  const drawerMeta = {
+    All:{ icon:"📥" }, Bills:{ icon:"🧾" }, Legal:{ icon:"⚖️" },
+    Medical:{ icon:"🏥" }, Personal:{ icon:"💌" }, Junk:{ icon:"🗑️" },
+  };
+  const DISPOSAL_META = {
+    toss:{ label:"Safe to toss", icon:"🗑️" },
+    keep:{ label:"Keep the original", icon:"📁" },
+    keepsake:{ label:"Keepsake", icon:"💛" },
+  };
+  const urgencyMap = {
+    high:{ label:"High" }, medium:{ label:"Medium" }, low:{ label:"Low" },
+  };
+
+  let activeDrawer = "All";
+  let searchQuery = "";
+  let openSwipeRow = null;
+
+  const fmtShort = (iso) => iso ? new Date(iso+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+  const daysUntil = (iso) => iso ? Math.ceil((new Date(iso+'T12:00:00')-NOW)/86400000) : null;
+  const parseAmount = (s) => { if(!s) return 0; const v=parseFloat(s.replace(/[^0-9.]/g,'')); return isNaN(v)?0:v; };
+
+  // ---------- Tasks store ----------
+  function loadTasks(){
+    try{ return JSON.parse(localStorage.getItem(TASKS_KEY)) || []; } catch(e){ return []; }
+  }
+  function saveTasks(){ localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)); }
+  let tasks = loadTasks();
+
+  function addTask(title, due, source){
+    tasks.unshift({ id:Date.now()+Math.random(), title, due:due||null, source:source||null, done:false });
+    saveTasks(); renderTasks();
+  }
+
+  // ---------- Disposed store — tracks which physical mail the user has confirmed tossing/keeping ----------
+  function loadDisposed(){
+    try{ return JSON.parse(localStorage.getItem(DISPOSED_KEY)) || {}; } catch(e){ return {}; }
+  }
+  function saveDisposed(){ localStorage.setItem(DISPOSED_KEY, JSON.stringify(disposed)); }
+  let disposed = loadDisposed();
+  function setDisposed(id, value){ disposed[id] = value; saveDisposed(); }
+
+  // ---------- Toast ----------
+  const toastEl = document.getElementById('toast');
+  let toastTimer;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 2200);
+  }
+
+  // ---------- Tabs ----------
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const panels = { inbox: document.getElementById('panel-inbox'), tasks: document.getElementById('panel-tasks'), account: document.getElementById('panel-account') };
+  tabButtons.forEach(btn => btn.addEventListener('click', () => {
+    tabButtons.forEach(b => b.classList.toggle('active', b===btn));
+    Object.entries(panels).forEach(([name, el]) => el.hidden = name !== btn.dataset.tab);
+  }));
+
+  // ---------- Scroll -> collapsing large title ----------
+  document.querySelectorAll('[data-scroll]').forEach(area => {
+    const panel = area.closest('.panel');
+    area.addEventListener('scroll', () => {
+      panel.classList.toggle('scrolled', area.scrollTop > 18);
+    }, { passive:true });
+  });
+
+  // ---------- Sheets ----------
+  function openSheet(scrim, sheet){
+    scrim.hidden = false; sheet.hidden = false;
+    requestAnimationFrame(()=>{ scrim.classList.add('show'); sheet.classList.add('show'); });
+  }
+  function closeSheet(scrim, sheet){
+    scrim.classList.remove('show'); sheet.classList.remove('show');
+    setTimeout(()=>{ scrim.hidden = true; sheet.hidden = true; }, 320);
+  }
+  function wireSheetDismiss(scrim, sheet, handle){
+    scrim.addEventListener('click', () => closeSheet(scrim, sheet));
+    let startY=0, dy=0, dragging=false;
+    handle.addEventListener('pointerdown', e => { dragging=true; startY=e.clientY; sheet.style.transition='none'; handle.setPointerCapture(e.pointerId); });
+    handle.addEventListener('pointermove', e => {
+      if(!dragging) return;
+      dy = Math.max(0, e.clientY-startY);
+      sheet.style.transform = `translateY(${dy}px)`;
+    });
+    function end(){
+      if(!dragging) return;
+      dragging=false;
+      sheet.style.transition='';
+      sheet.style.transform='';
+      if(dy > 90) closeSheet(scrim, sheet);
+      dy = 0;
+    }
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
+  }
+
+  const detailScrim = document.getElementById('detailScrim');
+  const detailSheet = document.getElementById('detailSheet');
+  const detailBody = document.getElementById('detailBody');
+  wireSheetDismiss(detailScrim, detailSheet, document.getElementById('detailHandle'));
+
+  const taskScrim = document.getElementById('taskScrim');
+  const taskSheet = document.getElementById('taskSheet');
+  wireSheetDismiss(taskScrim, taskSheet, document.getElementById('taskHandle'));
+
+  const DISPOSAL_ACTION_LABEL = {
+    toss:{ action:"Mark as tossed", done:"Tossed" },
+    keep:{ action:"Mark as filed", done:"Filed" },
+    keepsake:{ action:"Mark as saved", done:"Saved" },
+  };
+
+  function openDetail(m){
+    const u = urgencyMap[m.urgency];
+    const actions = [];
+    if(m.phone) actions.push(`<a class="big-action primary" href="tel:${m.phone}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2Z"/></svg>Call</a>`);
+    if(m.email) actions.push(`<a class="big-action" href="mailto:${m.email}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5C4 5.67 4.67 5 5.5 5h13c.83 0 1.5.67 1.5 1.5v11c0 .83-.67 1.5-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11Z"/><path d="M4 7l8 5.5L20 7"/></svg>Email</a>`);
+    actions.push(`<button class="big-action ${actions.length===0?'primary':''}" id="detailAddTask"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Add Task</button>`);
+    const gridColsClass = actions.length===1 ? 'cols-1' : actions.length===2 ? 'cols-2' : '';
+
+    const dm = DISPOSAL_META[m.disposal];
+    const dl = DISPOSAL_ACTION_LABEL[m.disposal];
+    const isDone = !!disposed[m.id];
+
+    detailBody.innerHTML = `
+      <div class="detail-header">
+        <div class="detail-icon">${m.icon}</div>
+        <div>
+          <div class="detail-sender">${m.sender}</div>
+          <div class="detail-title">${m.title}</div>
+        </div>
+      </div>
+      <div class="detail-badges">
+        <span class="badge ${m.urgency}">${u.label} urgency</span>
+        <span class="badge">${m.category}</span>
+        ${m.deadline ? `<span class="badge">Due ${fmtShort(m.deadline)}</span>` : ''}
+      </div>
+      <p class="detail-text">${m.details}</p>
+      <div class="action-grid ${gridColsClass}">${actions.join('')}</div>
+      <div class="disposal-card ${m.disposal}">
+        <div class="disposal-head"><span>${dm.icon}</span><span>${isDone ? dl.done : dm.label}</span></div>
+        <p class="disposal-reason">${m.disposalReason}</p>
+        <button class="disposal-btn ${isDone?'done':''}" id="disposalToggle">${isDone ? `↺ Undo — marked ${dl.done.toLowerCase()}` : dl.action}</button>
+      </div>
+    `;
+    const addBtn = document.getElementById('detailAddTask');
+    if(addBtn){
+      addBtn.addEventListener('click', () => {
+        let due = null;
+        if(m.deadline){ const d = new Date(m.deadline+'T12:00:00'); d.setDate(d.getDate()-1); due = d.toISOString().slice(0,10); }
+        addTask(`${m.sender} — ${m.title}`, due, m.sender);
+        showToast('Task added');
+        closeSheet(detailScrim, detailSheet);
+      });
+    }
+    document.getElementById('disposalToggle').addEventListener('click', () => {
+      const nowDone = !disposed[m.id];
+      setDisposed(m.id, nowDone);
+      renderMailList();
+      renderInsights();
+      openDetail(m);
+      showToast(nowDone ? `Marked ${DISPOSAL_ACTION_LABEL[m.disposal].done.toLowerCase()}` : 'Undone');
+    });
+    openSheet(detailScrim, detailSheet);
+  }
+
+  document.getElementById('addTaskBtn').addEventListener('click', () => {
+    document.getElementById('taskTitleInput').value = '';
+    document.getElementById('taskDateInput').value = '';
+    openSheet(taskScrim, taskSheet);
+    setTimeout(()=> document.getElementById('taskTitleInput').focus(), 320);
+  });
+  document.getElementById('taskSaveBtn').addEventListener('click', () => {
+    const title = document.getElementById('taskTitleInput').value.trim();
+    if(!title) return;
+    const due = document.getElementById('taskDateInput').value || null;
+    addTask(title, due, null);
+    closeSheet(taskScrim, taskSheet);
+    showToast('Task added');
+  });
+
+  // ---------- Swipe gesture (shared) ----------
+  function attachSwipe(row, onTap){
+    const content = row.querySelector('.row-content');
+    // width is passed via data attribute rather than measured, since rows are often built while
+    // their tab panel is display:none (offsetWidth would read 0 for anything measured then)
+    const actionsWidth = Number(row.dataset.actionsWidth);
+    let startX=0, startY=0, decided=false, horizontal=false, dragging=false, baseX=0, currentX=0;
+
+    row.addEventListener('pointerdown', e => {
+      // skip pointer capture for controls that need their own untouched click (checkboxes, etc.) —
+      // setPointerCapture retargets the trailing click to `row`, which would swallow their listeners
+      if(e.target.closest('.row-actions') || e.target.closest('[data-no-drag]')) return;
+      dragging=true; decided=false; horizontal=false;
+      startX=e.clientX; startY=e.clientY;
+      baseX = row.classList.contains('swiped') ? -actionsWidth : 0;
+      content.style.transition='none';
+      row.setPointerCapture(e.pointerId);
+    });
+    row.addEventListener('pointermove', e => {
+      if(!dragging) return;
+      const dx=e.clientX-startX, dy=e.clientY-startY;
+      if(!decided){
+        if(Math.abs(dx)<8 && Math.abs(dy)<8) return;
+        decided=true; horizontal = Math.abs(dx)>Math.abs(dy);
+        if(horizontal && openSwipeRow && openSwipeRow!==row) closeSwipe(openSwipeRow);
+      }
+      if(!horizontal) return;
+      currentX = Math.min(0, Math.max(-actionsWidth-24, baseX+dx));
+      content.style.transform = `translateX(${currentX}px)`;
+    });
+    function finish(){
+      if(!dragging) return;
+      dragging=false;
+      if(!horizontal) return;
+      content.style.transition='';
+      if(currentX < -actionsWidth/2){
+        content.style.transform=`translateX(${-actionsWidth}px)`;
+        row.classList.add('swiped');
+        openSwipeRow = row;
+      } else {
+        content.style.transform='translateX(0)';
+        row.classList.remove('swiped');
+        if(openSwipeRow===row) openSwipeRow=null;
+      }
+    }
+    row.addEventListener('pointerup', finish);
+    row.addEventListener('pointercancel', finish);
+    // click is retargeted to `row` once setPointerCapture fires, so it must be bound here rather than on `content`
+    row.addEventListener('click', e => {
+      if(e.target.closest('.row-actions')) return;
+      // a completed drag already resolved open/closed state in finish() — don't let the trailing click undo it
+      if(decided && horizontal) return;
+      if(row.classList.contains('swiped')){ closeSwipe(row); return; }
+      onTap(e);
+    });
+  }
+  function closeSwipe(row){
+    const content = row.querySelector('.row-content');
+    content.style.transform='translateX(0)';
+    row.classList.remove('swiped');
+    if(openSwipeRow===row) openSwipeRow=null;
+  }
+
+  // ---------- Render: chips ----------
+  const chipRow = document.getElementById('chipRow');
+  function renderChips(){
+    chipRow.innerHTML = Object.keys(drawerMeta).map(name => {
+      const count = name==='All' ? mailItems.length : mailItems.filter(m=>m.category===name).length;
+      return `<button class="chip ${activeDrawer===name?'active':''}" data-drawer="${name}">${drawerMeta[name].icon} ${name} <span class="count">${count}</span></button>`;
+    }).join('');
+    chipRow.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+      activeDrawer = c.dataset.drawer; renderChips(); renderMailList();
+    }));
+  }
+
+  // ---------- Render: insights ----------
+  function renderInsights(){
+    const withDeadline = mailItems.filter(m=>m.deadline).sort((a,b)=> new Date(a.deadline)-new Date(b.deadline));
+    const total = withDeadline.reduce((s,m)=> s+parseAmount(m.amount), 0);
+    const high = mailItems.filter(m=>m.urgency==='high').length;
+    const readyToToss = mailItems.filter(m=>m.disposal==='toss' && !disposed[m.id]).length;
+    const next = withDeadline[0];
+    const nextDays = next ? daysUntil(next.deadline) : null;
+
+    document.getElementById('insightStrip').innerHTML = `
+      <div class="insight-card">
+        <div class="label">Ready to Toss</div>
+        <div class="value">${readyToToss}</div>
+        <div class="sub">Safe to shred right now</div>
+      </div>
+      <div class="insight-card">
+        <div class="label">Upcoming</div>
+        <div class="value">$${total.toFixed(2)}</div>
+        <div class="sub">All open deadlines</div>
+      </div>
+      <div class="insight-card ${next && nextDays<0 ? 'alert':''}">
+        <div class="label">Next Due</div>
+        <div class="value">${next ? (nextDays>=0?`${nextDays}d`:'Overdue') : '—'}</div>
+        <div class="sub">${next ? next.sender : 'Nothing due'}</div>
+      </div>
+      <div class="insight-card ${high>0?'alert':''}">
+        <div class="label">Needs You</div>
+        <div class="value">${high}</div>
+        <div class="sub">High urgency</div>
+      </div>
+    `;
+  }
+
+  // ---------- Render: mail list ----------
+  const mailListEl = document.getElementById('mailList');
+  const mailEmptyEl = document.getElementById('mailEmpty');
+  function renderMailList(){
+    let items = activeDrawer==='All' ? mailItems : mailItems.filter(m=>m.category===activeDrawer);
+    if(searchQuery){
+      const q = searchQuery.toLowerCase();
+      items = items.filter(m => m.sender.toLowerCase().includes(q) || m.title.toLowerCase().includes(q) || m.summary.toLowerCase().includes(q));
+    }
+    items = [...items].sort((a,b)=> new Date(b.date)-new Date(a.date));
+
+    if(items.length===0){ mailListEl.innerHTML=''; mailEmptyEl.hidden=false; return; }
+    mailEmptyEl.hidden = true;
+
+    mailListEl.innerHTML = items.map(m => {
+      const u = urgencyMap[m.urgency];
+      const acts = [];
+      if(m.phone) acts.push(`<a class="row-action action-call" href="tel:${m.phone}" onclick="event.stopPropagation()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2Z"/></svg><span>Call</span></a>`);
+      if(m.email) acts.push(`<a class="row-action action-email" href="mailto:${m.email}" onclick="event.stopPropagation()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5C4 5.67 4.67 5 5.5 5h13c.83 0 1.5.67 1.5 1.5v11c0 .83-.67 1.5-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11Z"/><path d="M4 7l8 5.5L20 7"/></svg><span>Email</span></a>`);
+      acts.push(`<button class="row-action action-task" data-task-for="${m.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span>Task</span></button>`);
+
+      const dm = DISPOSAL_META[m.disposal];
+      const isDone = !!disposed[m.id];
+      const dl = DISPOSAL_ACTION_LABEL[m.disposal];
+
+      return `
+      <li class="swipe-row mail-row" data-id="${m.id}" data-actions-width="${acts.length*76}">
+        <div class="row-actions">${acts.join('')}</div>
+        <div class="row-content">
+          <div class="mail-row-content">
+            <div class="mail-icon">${m.icon}</div>
+            <div class="mail-main">
+              <div class="mail-top"><span class="mail-sender">${m.sender}</span><span class="mail-time">${m.received}</span></div>
+              <div class="mail-title-line">${m.title}</div>
+              <div class="mail-summary">${m.summary}</div>
+              <div class="mail-meta">
+                ${m.deadline ? `<span class="meta-chip ${m.urgency}">Due ${fmtShort(m.deadline)}</span>` : ''}
+                ${m.amount ? `<span class="meta-amount">${m.amount}</span>` : ''}
+                <span class="mail-disposal-tag ${isDone?'done':m.disposal}">${isDone?'✓':dm.icon} ${isDone?dl.done:dm.label}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>`;
+    }).join('');
+
+    mailListEl.querySelectorAll('.mail-row').forEach(row => {
+      const id = Number(row.dataset.id);
+      const m = mailItems.find(x=>x.id===id);
+      attachSwipe(row, () => openDetail(m));
+      const taskBtn = row.querySelector('[data-task-for]');
+      if(taskBtn) taskBtn.addEventListener('click', () => {
+        let due=null;
+        if(m.deadline){ const d=new Date(m.deadline+'T12:00:00'); d.setDate(d.getDate()-1); due=d.toISOString().slice(0,10); }
+        addTask(`${m.sender} — ${m.title}`, due, m.sender);
+        closeSwipe(row);
+        showToast('Task added');
+      });
+    });
+  }
+
+  // ---------- Render: tasks ----------
+  const taskListEl = document.getElementById('taskList');
+  const taskEmptyEl = document.getElementById('taskEmpty');
+  function renderTasks(){
+    if(tasks.length===0){ taskListEl.innerHTML=''; taskEmptyEl.hidden=false; return; }
+    taskEmptyEl.hidden = true;
+    const sorted = [...tasks].sort((a,b) => {
+      if(a.done !== b.done) return a.done ? 1 : -1;
+      if(!a.due && !b.due) return 0;
+      if(!a.due) return 1;
+      if(!b.due) return -1;
+      return new Date(a.due)-new Date(b.due);
+    });
+    taskListEl.innerHTML = sorted.map(t => `
+      <li class="swipe-row task-row ${t.done?'done':''}" data-id="${t.id}" data-actions-width="84">
+        <div class="row-actions"><button class="row-action action-delete" data-delete="${t.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7"/></svg><span>Delete</span></button></div>
+        <div class="row-content">
+          <div class="task-row-content">
+            <button class="task-check" data-toggle="${t.id}" data-no-drag>
+              ${t.done
+                ? `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="m8.5 12 2.3 2.3L15.5 9.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+                : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.5"/></svg>`}
+            </button>
+            <div>
+              <div class="task-title">${t.title}</div>
+              <div class="task-sub">${t.source ? t.source+' · ' : ''}${t.due ? 'Due '+fmtShort(t.due) : 'No due date'}</div>
+            </div>
+          </div>
+        </div>
+      </li>
+    `).join('');
+
+    taskListEl.querySelectorAll('.task-row').forEach(row => {
+      attachSwipe(row, () => {});
+      row.querySelector('[data-toggle]').addEventListener('click', e => {
+        e.stopPropagation();
+        const id = row.dataset.id;
+        const t = tasks.find(x => String(x.id)===id);
+        t.done = !t.done; saveTasks(); renderTasks();
+      });
+      const del = row.querySelector('[data-delete]');
+      if(del) del.addEventListener('click', () => {
+        tasks = tasks.filter(x => String(x.id) !== row.dataset.id);
+        saveTasks(); renderTasks();
+      });
+    });
+  }
+
+  // ---------- Search ----------
+  const searchField = document.getElementById('searchField');
+  const searchInput = document.getElementById('searchInput');
+  searchInput.addEventListener('input', e => {
+    searchQuery = e.target.value;
+    searchField.classList.toggle('has-text', searchQuery.length>0);
+    renderMailList();
+  });
+  document.getElementById('searchClear').addEventListener('click', () => {
+    searchInput.value=''; searchQuery=''; searchField.classList.remove('has-text'); renderMailList();
+  });
+
+  // ---------- Scan / upload ----------
+  const fileInput = document.getElementById('fileInput');
+  document.getElementById('scanFab').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    if(!fileInput.files.length) return;
+    showToast('Scanning mail…');
+    setTimeout(() => {
+      mailItems.unshift({
+        id:Date.now(), sender:"City of Berkeley", title:"Water & Trash Bill", category:"Bills",
+        date:"2026-07-29", received:"Just now",
+        summary:"New bill detected from photo. Amount $84.20. Due Aug 22.",
+        amount:"$84.20", deadline:"2026-08-22", urgency:"medium",
+        thread:"Berkeley Utilities", threadCount:1, isNewThread:true, confidence:96, icon:"💧",
+        phone:"+15106441000", email:"utilities@cityofberkeley.example",
+        disposal:"toss", disposalReason:"Routine utility bill — once it's paid, everything you'd need is saved here.",
+        details:"Auto-categorized as Bills. Extracted account number from image. Added to thread detection."
+      });
+      renderChips(); renderInsights(); renderMailList();
+      showToast('Added to Bills · Due Aug 22');
+    }, 1100);
+  });
+
+  // ---------- Account ----------
+  document.getElementById('notifSwitch').addEventListener('click', function(){ this.classList.toggle('on'); });
+
+  renderChips();
+  renderInsights();
+  renderMailList();
+  renderTasks();
+})();
+</script>
+</body>
+</html>
