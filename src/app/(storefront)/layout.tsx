@@ -3,6 +3,7 @@ import Image from "next/image";
 import { CartProvider } from "@/lib/cart/cart-context";
 import { getBusinessSettings } from "@/lib/settings/get-settings";
 import { CartLink } from "@/components/storefront/cart-link";
+import { SiteFooter } from "@/components/storefront/site-footer";
 
 export default async function StorefrontLayout({ children }: { children: React.ReactNode }) {
   const settings = await getBusinessSettings();
@@ -38,10 +39,7 @@ export default async function StorefrontLayout({ children }: { children: React.R
 
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">{children}</main>
 
-        <footer className="border-t border-border px-4 py-8 text-center text-sm text-muted-foreground safe-bottom">
-          <p>{name}</p>
-          {settings.allergen_notice && <p className="mx-auto mt-2 max-w-md">{settings.allergen_notice}</p>}
-        </footer>
+        <SiteFooter settings={settings} />
       </div>
     </CartProvider>
   );
